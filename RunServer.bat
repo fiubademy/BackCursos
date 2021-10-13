@@ -1,0 +1,1 @@
+docker run -i -p 8003:8000 course-service-image
