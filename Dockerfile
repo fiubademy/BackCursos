@@ -1,18 +1,15 @@
-FROM python:3.8-slim-buster
+FROM ubuntu
 
-EXPOSE 8000
+EXPOSE 8003
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-COPY requirements.txt .
-RUN python -m pip install -r requirements.txt
+RUN apt-get -y update 
+RUN apt-get -y install python3
+RUN apt-get -y install python3-pip
 
 WORKDIR /app
-COPY service/UserService.py /app/
 
+COPY requirements.txt /app/
+COPY service/CourseService.py /app/
 
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
-USER appuser
-
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "CourseService:app"]
+RUN pip3 install -r requirements.txt
+CMD python3 CourseService.py
