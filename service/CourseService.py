@@ -1,4 +1,3 @@
-import enum
 from fastapi import FastAPI, status
 from typing import List, Optional
 from pydantic.main import BaseModel
@@ -11,6 +10,7 @@ from sqlalchemy import Table, Column, ForeignKey, Integer, String
 from sqlalchemy import create_engine, insert
 from sqlalchemy.orm import relation, sessionmaker, relationship
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import DataError
 from sqlalchemy.dialects.postgresql import UUID
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -144,7 +144,7 @@ async def getCourse(courseId: str = ''):
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content='Cannot search for null courses.')
     try:
         course = session.query(Course).get(courseId)
-    except NoResultFound:
+    except (NoResultFound, DataError):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + courseId + ' not found.')
     return {'courseName': course.name, 'courseId': str(course.id)}
 
@@ -161,7 +161,7 @@ async def createCourse(courseName: str, courseDescription: str = ''):
 async def deleteCourse(courseId: str):
     try:
         course = session.query(Course).get(courseId)
-    except NoResultFound:
+    except (NoResultFound, DataError):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + courseId + ' not found and will not be deleted.')
     session.delete(course)
     session.commit()
@@ -169,13 +169,15 @@ async def deleteCourse(courseId: str):
 
 
 @ app.patch('/courses/{courseId}')
-async def patchCourse(courseId: str, courseName: Optional[str] = None):
+async def patchCourse(courseId: str, courseName: Optional[str] = '', courseDescription: Optional[str] = ''):
     try:
         course = session.query(Course).get(courseId)
-    except NoResultFound:
+    except (NoResultFound, DataError):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + courseId + ' not found and will not be patched.')
-    if(courseName is not None):
+    if(courseName != ''):
         course.name = courseName
+    if(courseDescription != ''):
+        course.description = courseDescription
     session.add(course)
     session.commit()
     return {'course_id': courseId, 'course_name': courseName}
