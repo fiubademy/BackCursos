@@ -1,1 +1,1 @@
-web: uvicorn service.CourseService:app --host=0.0.0.0 --port=${PORT:-5003}
+web: uvicorn app.main:app --host=0.0.0.0 --port=${PORT:-5003}
