@@ -8,7 +8,7 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_create_course(test_db):
+def test_create_course():
     response = client.post(
         "/courses", json={
             "courseName": "test-create-course",
@@ -18,7 +18,7 @@ def test_create_course(test_db):
     assert response.status_code == status.HTTP_201_CREATED
 
 
-def test_post_and_get_by_id(test_db):
+def test_post_and_get_by_id():
     name = 'course_test_post_and_get_by_id'
     courseId = client.post("/courses", json={
         "courseName": name
@@ -30,7 +30,7 @@ def test_post_and_get_by_id(test_db):
     assert course_obtained["courseName"] == name
 
 
-def test_post_and_get_by_name(test_db):
+def test_post_and_get_by_name():
     name = str(uuid.uuid4())
     courseId = client.post("/courses", json={
         "courseName": name
@@ -42,7 +42,7 @@ def test_post_and_get_by_name(test_db):
     assert courses[-1]["courseName"] == name
 
 
-def test_delete_correctly(test_db):
+def test_delete_correctly():
     name = 'test_delete_correctly'
     courseId = client.post("/courses", json={
         "courseName": name
@@ -54,7 +54,7 @@ def test_delete_correctly(test_db):
         f"/courses/{courseId}").status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_patch_course_correctly(test_db):
+def test_patch_course_correctly():
     name = 'test_patch_course_correctly'
     newName = 'test_patch_course_correctly_new'
     courseId = client.post("/courses", json={
@@ -72,7 +72,7 @@ def test_patch_course_correctly(test_db):
     # assert courseObtained["courseName"] == newName #FALLA EL TEST porque falta implementar patch bien
 
 
-def test_get_all_courses(test_db):
+def test_get_all_courses():
     data1 = client.post("/courses", json={
         "courseName": "curso1"
     }).json()
@@ -90,24 +90,24 @@ def test_get_all_courses(test_db):
     ]
 
 
-def test_get_by_bad_id_returns_404(test_db):
+def test_get_by_bad_id_returns_404():
     badId = 'abc123'
     assert client.get(
         f"/courses/{badId}").status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_get_all_on_empty_db_returns_404(test_db):
+def test_get_all_on_empty_db_returns_404():
     # FALLA, falta vaciar la db
     assert client.get(f"/courses").status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_bad_id_returns_404(test_db):
+def test_delete_bad_id_returns_404():
     badId = 'abc123'
     assert client.delete(
         f"/courses/{badId}").status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_patch_bad_id_returns_404(test_db):
+def test_patch_bad_id_returns_404():
     badId = 'abc123'
     assert client.patch(f"/courses/{badId}", json={
         "courseName": 'newName'

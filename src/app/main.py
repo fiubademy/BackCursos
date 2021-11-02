@@ -3,8 +3,8 @@ import uvicorn
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from db import engine, Base
-from api import courses
+from app.db import engine, Base
+from app.api import courses
 
 origins = ["*"]
 
