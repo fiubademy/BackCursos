@@ -3,8 +3,8 @@ import uvicorn
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db import engine, Base
-from app.api import courses
+from db import engine, Base
+from api import courses
 
 origins = ["*"]
 
@@ -23,5 +23,6 @@ app.add_middleware(
 app.include_router(courses.router, prefix="/courses", tags=["courses"])
 
 if __name__ == '__main__':
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     uvicorn.run(app, host='0.0.0.0', port=8000)

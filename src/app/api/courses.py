@@ -5,18 +5,18 @@ from starlette.responses import JSONResponse
 
 from sqlalchemy.exc import DataError
 
-from app.api.models import CourseRequest, CourseResponse, CourseDetailResponse
-from app.db import Course, session
+from api.models import CourseRequest, CourseResponse, CourseDetailResponse
+from db import Course, session
 
 
 router = APIRouter()
 
 
 @router.get('', response_model=List[CourseResponse])
-async def getCourses(courseNameFilter: Optional[str] = ''):
+async def getCourses(nameFilter: Optional[str] = ''):
     mensaje = []
     courses = session.query(Course).filter(
-        Course.name.ilike("%"+courseNameFilter+"%"))
+        Course.name.ilike("%"+nameFilter+"%"))
     if courses.first() is None:
         raise HTTPException(status_code=404, detail="No courses found")
     for course in courses:
@@ -67,7 +67,7 @@ async def deleteCourse(courseId: str):
 
 @router.patch('/{courseId}')
 async def patchCourse(courseId: str, request: CourseRequest):
-    # AGREGAR QUE SE MODIFIQUEN SOLO LOS CAMPOS PRESENTES EN newCourse, es la diferencia con PUT
+    # AGREGAR QUE SE MODIFIQUEN SOLO LOS CAMPOS PRESENTES EN newCourse
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -77,8 +77,8 @@ async def patchCourse(courseId: str, request: CourseRequest):
         raise HTTPException(status_code=404, detail='Course ' +
                             courseId + ' not found and will not be deleted.')
 
-    newCourse = Course(name=request.courseName,
-                       description=request.description)  # CREAR CON TODOS LOS ATRIBUTOS, constructor de copia
-    session.add(newCourse)
+    updated_course = Course(name=request.courseName,
+                            description=request.description)  # CREAR CON TODOS LOS ATRIBUTOS, constructor de copia
+    session.add(updated_course)
     session.commit()
-    return {'course_id': courseId, 'course_name': newCourse.name}
+    return {'course_id': courseId, 'course_name': updated_course.name}

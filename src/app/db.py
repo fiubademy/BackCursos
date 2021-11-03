@@ -17,8 +17,7 @@ DATABASE_URL = "postgresql://jhveahofefzvsq:eb0250343f5b7772d0db89b4c6ac263c7d1c
 # SQLAlchemy
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
-Session = sessionmaker(bind=engine)
-session = Session()
+session = sessionmaker(bind=engine)()
 
 
 course_students = Table('course_students', Base.metadata,
