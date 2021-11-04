@@ -1,15 +1,26 @@
-from fastapi import status, HTTPException, APIRouter
+from fastapi import status, APIRouter
 from typing import List, Optional
 from fastapi.param_functions import Query
 from starlette.responses import JSONResponse
-
 from sqlalchemy.exc import DataError
+from sqlalchemy.orm import sessionmaker
 
 from api.models import CourseRequest, CourseResponse, CourseDetailResponse
-from db import Course, session
+from db import Course
 
 
 router = APIRouter()
+
+session = None
+engine = None
+
+
+def set_engine(engine_rcvd):
+    global engine
+    global session
+    engine = engine_rcvd
+    session = sessionmaker(bind=engine)()
+    return session
 
 
 @router.get('', response_model=List[CourseResponse])
@@ -18,67 +29,63 @@ async def getCourses(nameFilter: Optional[str] = ''):
     courses = session.query(Course).filter(
         Course.name.ilike("%"+nameFilter+"%"))
     if courses.first() is None:
-        raise HTTPException(status_code=404, detail="No courses found")
+        return JSONResponse(status_code=404, content="No courses found")
     for course in courses:
         mensaje.append(
-            {'courseId': str(course.id), 'courseName': course.name})
-
-    # Podria devolver un CourseResponse. No estoy usando la estructura
+            {'id': str(course.id), 'name': course.name})
     return mensaje
 
 
-@router.get('/{courseId}', response_model=CourseResponse)
-# Usar Path obligatorio en lugar de hacer chequeo manual
-async def getCourse(courseId: str = Query(...)):
+@router.get('/{id}', response_model=CourseResponse)
+async def getCourse(id: str = Query(...)):
     try:
-        course = session.get(Course, courseId)
+        course = session.get(Course, id)
     except DataError:
-        raise HTTPException(
-            status_code=404, detail='Course ' + courseId + ' not found.')
+        session.rollback()
+        return JSONResponse(
+            status_code=400, content='Invalid id.')
     if course is None:
-        raise HTTPException(
-            status_code=404, detail='Course ' + courseId + ' not found.')
-    return {'courseName': course.name, 'courseId': str(course.id)}
+        return JSONResponse(
+            status_code=404, content='Course ' + id + ' not found.')
+    return {'name': course.name, 'id': str(course.id)}
 
 
 @router.post('', response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
 async def createCourse(request: CourseRequest):
-    newCourse = Course(name=request.courseName,
-                       description=request.description)  # CREAR CON TODOS LOS ATRIBUTOS
-    session.add(newCourse)
+    new = Course(**request.dict(exclude_unset=True))
+    session.add(new)
     session.commit()
-    return {'courseId': str(newCourse.id), 'courseName': newCourse.name}
+    return {'id': str(new.id), 'name': new.name}
 
 
-@router.delete('/{courseId}')
-async def deleteCourse(courseId: str):
+@ router.delete('/{id}')
+async def deleteCourse(id: str):
     try:
-        course = session.get(Course, courseId)
+        course = session.get(Course, id)
     except DataError:
-        raise HTTPException(status_code=404, detail='Course ' +
-                            courseId + ' not found and will not be deleted.')
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
-        raise HTTPException(status_code=404, detail='Course ' +
-                            courseId + ' not found and will not be deleted.')
+        return JSONResponse(status_code=404, content='Course ' +
+                            id + ' not found and will not be deleted.')
     session.delete(course)
     session.commit()
-    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + courseId + ' was deleted succesfully.')
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + id + ' was deleted succesfully.')
 
 
-@router.patch('/{courseId}')
-async def patchCourse(courseId: str, request: CourseRequest):
-    # AGREGAR QUE SE MODIFIQUEN SOLO LOS CAMPOS PRESENTES EN newCourse
+@ router.put('/{id}')
+async def updateCourse(id: str, request: CourseRequest):
     try:
-        course = session.get(Course, courseId)
+        course = session.get(Course, id)
     except DataError:
-        raise HTTPException(status_code=404, detail='Course ' +
-                            courseId + ' not found and will not be patched.')
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
-        raise HTTPException(status_code=404, detail='Course ' +
-                            courseId + ' not found and will not be deleted.')
-
-    updated_course = Course(name=request.courseName,
-                            description=request.description)  # CREAR CON TODOS LOS ATRIBUTOS, constructor de copia
-    session.add(updated_course)
+        return JSONResponse(status_code=404, content='Course ' +
+                            id + ' not found and will not be deleted.')
+    attributes = request.dict(exclude_unset=True)
+    attributes['id'] = course.id
+    course = Course(**attributes)
+    session.merge(course)
     session.commit()
-    return {'course_id': courseId, 'course_name': updated_course.name}
+    return {'course_id': course.id, 'name': course.name}

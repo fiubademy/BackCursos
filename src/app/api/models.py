@@ -4,7 +4,7 @@ from typing import List, Optional
 
 
 class CourseRequest(BaseModel):
-    courseName: str
+    name: str
     description: Optional[str] = ""
     students: Optional[List] = []
     hashtags: Optional[List] = []
@@ -13,8 +13,8 @@ class CourseRequest(BaseModel):
 
 
 class CourseResponse(BaseModel):
-    courseId: str
-    courseName: str
+    id: str
+    name: str
 
 
 class CourseDetailResponse(CourseResponse):
@@ -23,3 +23,6 @@ class CourseDetailResponse(CourseResponse):
     hashtags: List
     teachers: List
     content: str
+
+    class Config:
+        orm_mode = True

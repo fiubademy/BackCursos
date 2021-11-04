@@ -7,17 +7,17 @@ from sqlalchemy import (
     create_engine
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relation, sessionmaker, relationship
+from sqlalchemy.orm import relation, relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
 DATABASE_URL = "postgresql://jhveahofefzvsq:eb0250343f5b7772d0db89b4c6ac263c7d1c891b956d4f38527acfc2ba0e88b6@ec2-3-221-100-217.compute-1.amazonaws.com:5432/d9bj3e61otop9n"
-
-
-# SQLAlchemy
 engine = create_engine(DATABASE_URL)
+
+TEST_DATABASE_URL = "postgresql://iegxsavpkkbzlf:7bc34cff38335a7e9c09dcde83b44d3ce6cfc903157deba12999d8a7ea58af2f@ec2-3-218-92-146.compute-1.amazonaws.com:5432/d9li5u0oq3rjhe"
+test_engine = create_engine(TEST_DATABASE_URL)
+
 Base = declarative_base()
-session = sessionmaker(bind=engine)()
 
 
 course_students = Table('course_students', Base.metadata,
@@ -47,6 +47,7 @@ class Course(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     description = Column(String)
+    # creator
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
     students = relationship('Student',
@@ -58,15 +59,18 @@ class Course(Base):
     teachers = relationship('Teacher',
                             secondary=course_teachers,
                             back_populates='courses')
+    # state (en edición, abierto)
+    # bloqueado (bool)
 
 
 class Student(Base):  # many to many relationship
     __tablename__ = "students"
     user_id = Column(UUID(as_uuid=True), primary_key=True,
-                     default=uuid.uuid4)  # TODO CONECTAR CON DB DE USUARIOS
+                     default=uuid.uuid4)
     courses = relationship('Course',
                            secondary=course_students,
                            back_populates='students')
+    # completed = NULL, y una nota si lo termino
 
 
 class Hashtag(Base):  # many to many relationship
@@ -81,7 +85,7 @@ class Hashtag(Base):  # many to many relationship
 class Teacher(Base):  # many to many relationship
     __tablename__ = "teachers"
     user_id = Column(UUID(as_uuid=True), primary_key=True,
-                     default=uuid.uuid4)  # TODO CONECTAR CON DB DE USUARIOS
+                     default=uuid.uuid4)
     courses = relationship('Course',
                            secondary=course_teachers,
                            back_populates='teachers')

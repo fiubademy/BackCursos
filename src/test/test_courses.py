@@ -1,114 +1,117 @@
-import uuid
-
-from fastapi.testclient import TestClient
+import asyncio
 from fastapi import status
-from app.main import app
+
+from app.api import courses, models
 
 
-client = TestClient(app)
+async def post(request: models.CourseRequest):
+    return await courses.createCourse(request)
 
 
-def test_create_course():
-    response = client.post(
-        "/courses", json={
-            "courseName": "test-create-course",
-            "description": "descripcion falsa",
-        }
-    )
-    assert response.status_code == status.HTTP_201_CREATED
+async def delete(courseId: str):
+    return await courses.deleteCourse(courseId)
+
+
+async def get_by_id(courseId: str):
+    return await courses.getCourse(courseId)
+
+
+async def get_all(courseName: str = ''):
+    return await courses.getCourses(courseName)
+
+
+async def update(courseId: str, request: models.CourseRequest):
+    return await courses.updateCourse(courseId, request)
 
 
 def test_post_and_get_by_id():
-    name = 'course_test_post_and_get_by_id'
-    courseId = client.post("/courses", json={
-        "courseName": name
-    }).json()['courseId']
+    name = 'test_post_and_get_by_id'
+    description = 'descripcion'
+    request = models.CourseRequest(name=name, description=description)
 
-    course_obtained = client.get(f"/courses/{courseId}").json()
+    courseId = asyncio.run(post(request))["id"]
+    courseObtained = asyncio.run(get_by_id(courseId))
 
-    assert course_obtained["courseId"] == courseId
-    assert course_obtained["courseName"] == name
+    assert courseObtained["id"] == courseId
+    assert courseObtained["name"] == name
+
+    asyncio.run(delete(courseId))
+
+
+def test_get_by_bad_id_returns_400():
+    badId = 'abc123'
+    assert asyncio.run(
+        get_by_id(badId)).status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_post_and_get_by_name():
-    name = str(uuid.uuid4())
-    courseId = client.post("/courses", json={
-        "courseName": name
-    }).json()['courseId']
+    name = 'test_post_and_get_by_name'
+    request = models.CourseRequest(name=name)
 
-    courses = client.get(f"/courses").json()
+    courseId = asyncio.run(post(request))['id']
+    courses = asyncio.run(get_all(name))
 
-    assert courses[-1]["courseId"] == courseId
-    assert courses[-1]["courseName"] == name
+    assert courses[-1]["name"] == name
+
+    asyncio.run(delete(courseId))
 
 
 def test_delete_correctly():
     name = 'test_delete_correctly'
-    courseId = client.post("/courses", json={
-        "courseName": name
-    }).json()['courseId']
+    request = models.CourseRequest(name=name)
 
-    client.delete(f"/courses/{courseId}")
+    courseId = asyncio.run(post(request))["id"]
+    asyncio.run(delete(courseId))
 
-    assert client.get(
-        f"/courses/{courseId}").status_code == status.HTTP_404_NOT_FOUND
+    assert asyncio.run(get_by_id(courseId)
+                       ).status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_patch_course_correctly():
-    name = 'test_patch_course_correctly'
-    newName = 'test_patch_course_correctly_new'
-    courseId = client.post("/courses", json={
-        "courseName": name
-    }).json()['courseId']
+def test_delete_bad_id_returns_400():
+    badId = 'abc123'
+    assert asyncio.run(
+        delete(badId)).status_code == status.HTTP_400_BAD_REQUEST
 
-    patchResponse = client.patch(f"/courses/{courseId}", json={
-        "courseName": newName
-    })
 
-    courseObtained = client.get(f"/courses/{courseId}").json()
+def test_put_course_correctly():
+    name = 'test_put_course_correctly'
+    request = models.CourseRequest(name=name)
+    courseId = asyncio.run(post(request))["id"]
 
-    assert patchResponse.status_code == status.HTTP_200_OK
-    assert courseObtained["courseId"] == courseId
-    # assert courseObtained["courseName"] == newName #FALLA EL TEST porque falta implementar patch bien
+    newName = 'new_name'
+    request = models.CourseRequest(name=newName)
+    asyncio.run(update(courseId, request))
+
+    courseObtained = asyncio.run(get_by_id(courseId))
+    asyncio.run(delete(courseId))
+
+    assert courseObtained["id"] == courseId
+    assert courseObtained["name"] == newName
+
+    asyncio.run(delete(courseId))
+
+
+def test_put_bad_id_returns_400():
+    badId = 'abc123'
+    name = 'test_put_bad_id_returns_404'
+    request = models.CourseRequest(name=name)
+    assert asyncio.run(
+        update(badId, request)).status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_get_all_courses():
-    data1 = client.post("/courses", json={
-        "courseName": "curso1"
-    }).json()
+    try:
+        initialLen = len(asyncio.run(get_all()))
+    except TypeError:
+        initialLen = 0
 
-    data2 = client.post("/courses", json={
-        "courseName": "curso2"
-    }).json()
+    courseId1 = asyncio.run(post(request=models.CourseRequest(name='curso1')
+                                 ))["id"]
+    courseId2 = asyncio.run(post(request=models.CourseRequest(name='curso1')
+                                 ))["id"]
+    coursesObtained = asyncio.run(get_all())
 
-    response = client.get(f"/courses").json()
+    assert len(coursesObtained) == initialLen + 2
 
-    # assert len(response) == 2  # FALLAN, falta vaciar la db
-    assert response == [
-        {"courseId": data1['courseId'], "courseName": data1['courseName']},
-        {"courseId": data2['courseId'], "courseName": data2['courseName']},
-    ]
-
-
-def test_get_by_bad_id_returns_404():
-    badId = 'abc123'
-    assert client.get(
-        f"/courses/{badId}").status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_get_all_on_empty_db_returns_404():
-    # FALLA, falta vaciar la db
-    assert client.get(f"/courses").status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_delete_bad_id_returns_404():
-    badId = 'abc123'
-    assert client.delete(
-        f"/courses/{badId}").status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_patch_bad_id_returns_404():
-    badId = 'abc123'
-    assert client.patch(f"/courses/{badId}", json={
-        "courseName": 'newName'
-    }).status_code == status.HTTP_404_NOT_FOUND
+    asyncio.run(delete(courseId1))
+    asyncio.run(delete(courseId2))

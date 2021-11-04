@@ -1,10 +1,6 @@
-import pytest
+from app.api.courses import set_engine
+from app.db import test_engine, Base
 
-from app.db import engine, Base
-
-
-@pytest.fixture()
-def test_db():
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+Base.metadata.drop_all(test_engine)
+Base.metadata.create_all(test_engine)
+session = set_engine(test_engine)
