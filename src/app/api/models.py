@@ -9,7 +9,7 @@ class CourseRequest(BaseModel):
     students: Optional[List] = []
     hashtags: Optional[List] = []
     teachers: Optional[List] = []
-    content: Optional[str] = None
+    content: Optional[List] = []
 
 
 class CourseResponse(BaseModel):
@@ -22,7 +22,7 @@ class CourseDetailResponse(CourseResponse):
     students: List
     hashtags: List
     teachers: List
-    content: str
+    content: List
 
     class Config:
         orm_mode = True

@@ -6,7 +6,7 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.orm import sessionmaker
 
 from api.models import CourseRequest, CourseResponse, CourseDetailResponse
-from db import Course
+from db import Course, Student
 
 
 router = APIRouter()
@@ -24,7 +24,7 @@ def set_engine(engine_rcvd):
 
 
 @router.get('', response_model=List[CourseResponse])
-async def getCourses(nameFilter: Optional[str] = ''):
+async def get_all(nameFilter: Optional[str] = ''):
     mensaje = []
     courses = session.query(Course).filter(
         Course.name.ilike("%"+nameFilter+"%"))
@@ -37,7 +37,7 @@ async def getCourses(nameFilter: Optional[str] = ''):
 
 
 @router.get('/{id}', response_model=CourseResponse)
-async def getCourse(id: str = Query(...)):
+async def get_by_id(id: str = Query(...)):
     try:
         course = session.get(Course, id)
     except DataError:
@@ -50,8 +50,24 @@ async def getCourse(id: str = Query(...)):
     return {'name': course.name, 'id': str(course.id)}
 
 
+@router.get('/user/{userId}', response_model=List[CourseResponse])
+async def get_by_user(userId: str = Query(...)):
+    response = []
+    try:
+        user = session.get(Student, userId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(
+            status_code=400, content='Invalid user id.')
+
+    for course in user.courses:
+        response.append(
+            {'id': str(course.id), 'name': course.name})
+    return response
+
+
 @router.post('', response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
-async def createCourse(request: CourseRequest):
+async def create(request: CourseRequest):
     new = Course(**request.dict(exclude_unset=True))
     session.add(new)
     session.commit()
@@ -59,7 +75,7 @@ async def createCourse(request: CourseRequest):
 
 
 @ router.delete('/{id}')
-async def deleteCourse(id: str):
+async def delete(id: str):
     try:
         course = session.get(Course, id)
     except DataError:
@@ -74,7 +90,7 @@ async def deleteCourse(id: str):
 
 
 @ router.put('/{id}')
-async def updateCourse(id: str, request: CourseRequest):
+async def update(id: str, request: CourseRequest):
     try:
         course = session.get(Course, id)
     except DataError:
@@ -88,4 +104,36 @@ async def updateCourse(id: str, request: CourseRequest):
     course = Course(**attributes)
     session.merge(course)
     session.commit()
-    return {'course_id': course.id, 'name': course.name}
+    return {'id': course.id, 'name': course.name}
+
+
+@ router.get('/students/{courseId}')
+async def get_students(courseId: str):
+    students = []
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(
+            status_code=400, content='Invalid id.')
+    if course is None:
+        return JSONResponse(
+            status_code=404, content='Course ' + courseId + ' not found.')
+    for user in course.students:
+        students.append({'id': user.userId})
+    return students
+
+
+@ router.post('/add_student/{courseId}/{userId}')
+async def add_student(courseId: str, userId: str):
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(
+            status_code=400, content='Invalid id.')
+    if course is None:
+        return JSONResponse(
+            status_code=404, content='Course ' + courseId + ' not found.')
+    course.students.append(Student(userId=userId))
+    return {'courseId': course.id, 'name': course.name}
