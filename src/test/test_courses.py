@@ -58,6 +58,12 @@ def test_get_by_bad_id_returns_400():
         get_by_id(badId)).status_code == status.HTTP_400_BAD_REQUEST
 
 
+def test_get_by_id_inexistent_course_returns_404():
+    inexistentId = str(uuid.uuid4())
+    assert asyncio.run(
+        get_by_id(inexistentId)).status_code == status.HTTP_404_NOT_FOUND
+
+
 def test_post_and_get_by_name():
     name = 'test_post_and_get_by_name'
     teacherId = str(uuid.uuid4())
@@ -150,18 +156,39 @@ def test_get_by_user():
     asyncio.run(delete(courseId))
 
 
-# def test_get_students():
+def test_get_by_user_inexistent_returns_404():
+    name = 'test_get_by_user_inexistent_returns_404'
+    userId1 = str(uuid.uuid4())
+    userId2 = str(uuid.uuid4())
+    courseId = asyncio.run(
+        post(CourseRequest(name=name, students=[userId1])))["id"]
+
+    assert asyncio.run(get_by_user(
+        userId2)).status_code == status.HTTP_404_NOT_FOUND
+
+    asyncio.run(delete(courseId))
 
 
-def test_add_student():
+def test_add_and_get_students():
     courseId = asyncio.run(post(CourseRequest(name='test_add_student')))["id"]
-    userId = str(uuid.uuid4())
-    asyncio.run(add_student(courseId, userId))
+    userId1 = str(uuid.uuid4())
+    userId2 = str(uuid.uuid4())
+    asyncio.run(add_student(courseId, userId1))
+    asyncio.run(add_student(courseId, userId2))
 
     students = asyncio.run(get_students(courseId))
-    user = {
-        'id': userId
-    }
-    assert user in students
+    user1 = {'id': userId1}
+    user2 = {'id': userId2}
+    assert user1 in students
+    assert user2 in students
+
+    asyncio.run(delete(courseId))
+
+
+def test_get_students_on_empty_course_returns_404():
+    courseId = asyncio.run(post(CourseRequest(name='test_add_student')))["id"]
+
+    assert asyncio.run(get_students(courseId)
+                       ).status_code == status.HTTP_404_NOT_FOUND
 
     asyncio.run(delete(courseId))

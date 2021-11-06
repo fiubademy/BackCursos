@@ -52,18 +52,19 @@ async def get_by_id(id: str = Query(...)):
 
 @router.get('/user/{userId}', response_model=List[CourseResponse])
 async def get_by_user(userId: str = Query(...)):
-    response = []
+    userCourses = []
     try:
         user = session.get(Student, userId)
     except DataError:
         session.rollback()
         return JSONResponse(
             status_code=400, content='Invalid user id.')
-
+    if user is None:
+        return JSONResponse(status_code=404, content="No courses found")
     for course in user.courses:
-        response.append(
+        userCourses.append(
             {'id': str(course.id), 'name': course.name})
-    return response
+    return userCourses
 
 
 @router.post('', response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
@@ -119,6 +120,8 @@ async def get_students(courseId: str):
     if course is None:
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
+    if len(course.students) == 0:
+        return JSONResponse(status_code=404, content='No users found.')
     for user in course.students:
         students.append({'id': user.userId})
     return students
@@ -126,12 +129,13 @@ async def get_students(courseId: str):
 
 @ router.post('/add_student/{courseId}/{userId}')
 async def add_student(courseId: str, userId: str):
+    # No se valida que el id de usuario sea correcto
     try:
         course = session.get(Course, courseId)
     except DataError:
         session.rollback()
         return JSONResponse(
-            status_code=400, content='Invalid id.')
+            status_code=400, content='Invalid course id.')
     if course is None:
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
