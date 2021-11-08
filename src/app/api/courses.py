@@ -5,8 +5,8 @@ from starlette.responses import JSONResponse
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import sessionmaker
 
-from api.models import CourseRequest, CourseResponse, CourseDetailResponse
-from db import Course
+from app.api.models import CourseRequest, CourseResponse, CourseDetailResponse
+from app.db import Course
 
 
 router = APIRouter()
