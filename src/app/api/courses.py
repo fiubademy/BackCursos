@@ -26,8 +26,11 @@ def set_engine(engine_rcvd):
 @router.get('', response_model=List[CourseResponse])
 async def get_all(nameFilter: Optional[str] = ''):
     mensaje = []
-    courses = session.query(Course).filter(
-        Course.name.ilike("%"+nameFilter+"%"))
+    if nameFilter != '':
+        courses = session.query(Course).filter(
+            Course.name.ilike("%"+nameFilter+"%"))
+    else:
+        courses = session.query(Course)
     if courses.first() is None:
         return JSONResponse(status_code=404, content="No courses found")
     for course in courses:

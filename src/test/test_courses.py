@@ -132,12 +132,16 @@ def test_get_all_courses():
                                  ))["id"]
     courseId2 = asyncio.run(post(request=CourseRequest(name='curso1')
                                  ))["id"]
-    coursesObtained = asyncio.run(get_all())
 
-    assert len(coursesObtained) == initialLen + 2
+    courseId3 = asyncio.run(post(request=CourseRequest(name='curso2')
+                                 ))["id"]
+    newLen = len(asyncio.run(get_all()))
+
+    assert newLen == initialLen + 3
 
     asyncio.run(delete(courseId1))
     asyncio.run(delete(courseId2))
+    asyncio.run(delete(courseId3))
 
 
 def test_get_by_user():
