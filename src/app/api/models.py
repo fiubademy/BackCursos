@@ -5,6 +5,7 @@ from typing import List, Optional
 
 class CourseRequest(BaseModel):
     name: str
+    owner: str
     description: Optional[str] = ""
     students: Optional[List] = []
     hashtags: Optional[List] = []
