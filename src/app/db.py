@@ -24,7 +24,7 @@ course_students = Table('course_students', Base.metadata,
                         Column('course_id', ForeignKey(
                             'courses.id'), primary_key=True),
                         Column('student_id', ForeignKey(
-                            'students.user_id'), primary_key=True)
+                            'students.userId'), primary_key=True)
                         )
 
 course_hashtags = Table('course_hashtags', Base.metadata,
@@ -38,7 +38,7 @@ course_teachers = Table('course_teachers', Base.metadata,
                         Column('course_id', ForeignKey(
                             'courses.id'), primary_key=True),
                         Column('teacher_id', ForeignKey(
-                            'teachers.user_id'), primary_key=True)
+                            'teachers.userId'), primary_key=True)
                         )
 
 
@@ -62,11 +62,25 @@ class Course(Base):
     # state (en edición, abierto)
     # bloqueado (bool)
 
+    def __init__(self, name, id=None, description='', content=[], students=[], hashtags=[], teachers=[]):
+        if id is not None:
+            self.id = id
+        self.name = name
+        self.description = description
+        for c in content:
+            self.content.append(Content(content=c))
+        for user in students:
+            self.students.append(Student(userId=user))
+        for hashtag in hashtags:
+            self.hashtags.append(Hashtag(tag=hashtag))
+        for user in teachers:
+            self.teachers.append(Teacher(userId=user))
+
 
 class Student(Base):  # many to many relationship
     __tablename__ = "students"
-    user_id = Column(UUID(as_uuid=True), primary_key=True,
-                     default=uuid.uuid4)
+    userId = Column(UUID(as_uuid=True), primary_key=True,
+                    default=uuid.uuid4)
     courses = relationship('Course',
                            secondary=course_students,
                            back_populates='students')
@@ -84,8 +98,8 @@ class Hashtag(Base):  # many to many relationship
 
 class Teacher(Base):  # many to many relationship
     __tablename__ = "teachers"
-    user_id = Column(UUID(as_uuid=True), primary_key=True,
-                     default=uuid.uuid4)
+    userId = Column(UUID(as_uuid=True), primary_key=True,
+                    default=uuid.uuid4)
     courses = relationship('Course',
                            secondary=course_teachers,
                            back_populates='teachers')
@@ -95,7 +109,7 @@ class Content(Base):  # one to many relationship
     __tablename__ = "content"
     id = Column(Integer, primary_key=True)
     content = Column(String, nullable=False)
-    course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
+    courseId = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     course = relationship("Course", back_populates="content")
 
     def __repr__(self):

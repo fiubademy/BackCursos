@@ -2,7 +2,6 @@ import uvicorn
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
