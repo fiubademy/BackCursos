@@ -1,6 +1,8 @@
-from fastapi import FastAPI
 import uvicorn
-
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "app"))
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from db import engine, Base
