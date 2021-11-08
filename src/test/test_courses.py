@@ -46,6 +46,14 @@ async def add_colaborator(courseId: str, userId: str):
     return await courses.add_colaborator(courseId, userId)
 
 
+async def get_hashtags(courseId: str):
+    return await courses.get_hashtags(courseId)
+
+
+async def add_hashtag(courseId: str, tag: str):
+    return await courses.add_hashtag(courseId, tag)
+
+
 def test_post_and_get_by_id():
     name = 'test_post_and_get_by_id'
     description = 'descripcion'
@@ -182,7 +190,8 @@ def test_get_by_user_inexistent_returns_404():
 
 
 def test_add_and_get_students():
-    courseId = asyncio.run(post(CourseRequest(name='test_add_student')))["id"]
+    courseId = asyncio.run(
+        post(CourseRequest(name='test_add_and_get_students')))["id"]
     userId1 = str(uuid.uuid4())
     userId2 = str(uuid.uuid4())
     asyncio.run(add_student(courseId, userId1))
@@ -198,7 +207,8 @@ def test_add_and_get_students():
 
 
 def test_get_students_on_empty_course_returns_404():
-    courseId = asyncio.run(post(CourseRequest(name='test_add_student')))["id"]
+    courseId = asyncio.run(post(CourseRequest(
+        name='test_get_students_on_empty_course_returns_404')))["id"]
 
     assert asyncio.run(get_students(courseId)
                        ).status_code == status.HTTP_404_NOT_FOUND
@@ -208,7 +218,7 @@ def test_get_students_on_empty_course_returns_404():
 
 def test_add_and_get_colaborators():
     courseId = asyncio.run(
-        post(CourseRequest(name='test_add_colaborator')))["id"]
+        post(CourseRequest(name='test_add_and_get_colaborators')))["id"]
     userId1 = str(uuid.uuid4())
     userId2 = str(uuid.uuid4())
     asyncio.run(add_colaborator(courseId, userId1))
@@ -225,9 +235,34 @@ def test_add_and_get_colaborators():
 
 def test_get_colaborators_on_empty_course_returns_404():
     courseId = asyncio.run(
-        post(CourseRequest(name='test_add_colaborator')))["id"]
+        post(CourseRequest(name='test_get_colaborators_on_empty_course_returns_404')))["id"]
 
     assert asyncio.run(get_colaborators(courseId)
+                       ).status_code == status.HTTP_404_NOT_FOUND
+
+    asyncio.run(delete(courseId))
+
+
+def test_add_and_get_hashtags():
+    courseId = asyncio.run(
+        post(CourseRequest(name='test_add_and_get_hashtags')))["id"]
+    asyncio.run(add_hashtag(courseId, 'tag1'))
+    asyncio.run(add_hashtag(courseId, 'tag2'))
+
+    hashtags = asyncio.run(get_hashtags(courseId))
+    tag1 = {'hashtag': 'tag1'}
+    tag2 = {'hashtag': 'tag2'}
+    assert tag1 in hashtags
+    assert tag2 in hashtags
+
+    asyncio.run(delete(courseId))
+
+
+def test_get_hashtags_on_empty_course_returns_404():
+    courseId = asyncio.run(
+        post(CourseRequest(name='test_get_hashtags_on_empty_course_returns_404')))["id"]
+
+    assert asyncio.run(get_hashtags(courseId)
                        ).status_code == status.HTTP_404_NOT_FOUND
 
     asyncio.run(delete(courseId))

@@ -79,8 +79,7 @@ class Course(Base):
 
 class Student(Base):  # many to many relationship
     __tablename__ = "students"
-    userId = Column(UUID(as_uuid=True), primary_key=True,
-                    default=uuid.uuid4)
+    userId = Column(UUID(as_uuid=True), primary_key=True)
     courses = relationship('Course',
                            secondary=course_students,
                            back_populates='students')
@@ -98,8 +97,7 @@ class Hashtag(Base):  # many to many relationship
 
 class Teacher(Base):  # many to many relationship
     __tablename__ = "teachers"
-    userId = Column(UUID(as_uuid=True), primary_key=True,
-                    default=uuid.uuid4)
+    userId = Column(UUID(as_uuid=True), primary_key=True)
     courses = relationship('Course',
                            secondary=course_teachers,
                            back_populates='teachers')

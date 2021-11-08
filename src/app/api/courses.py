@@ -6,8 +6,7 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.orm import sessionmaker
 
 from api.models import CourseRequest, CourseResponse, CourseDetailResponse
-from db import Course, Student, Teacher
-
+from db import Course, Student, Teacher, Hashtag
 
 router = APIRouter()
 
@@ -178,4 +177,38 @@ async def add_colaborator(courseId: str, userId: str):
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
     course.teachers.append(Teacher(userId=userId))
+    return {'courseId': course.id, 'name': course.name}
+
+
+@ router.get('/{courseId}/hashtags')
+async def get_hashtags(courseId: str):
+    hashtags = []
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(
+            status_code=400, content='Invalid id.')
+    if course is None:
+        return JSONResponse(
+            status_code=404, content='Course ' + courseId + ' not found.')
+    if len(course.hashtags) == 0:
+        return JSONResponse(status_code=404, content='No hashtags found.')
+    for hashtag in course.hashtags:
+        hashtags.append({'hashtag': hashtag.tag})
+    return hashtags
+
+
+@ router.post('/{courseId}/add_hashtag/{tag}')
+async def add_hashtag(courseId: str, tag: str):
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(
+            status_code=400, content='Invalid course id.')
+    if course is None:
+        return JSONResponse(
+            status_code=404, content='Course ' + courseId + ' not found.')
+    course.hashtags.append(Hashtag(tag=tag))
     return {'courseId': course.id, 'name': course.name}
