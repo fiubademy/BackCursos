@@ -1,12 +1,12 @@
 import uvicorn
-import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "app"))
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from db import engine, Base
-from api import courses
+from app.db import engine, Base
+from app.api import courses
 
 origins = ["*"]
 courses.set_engine(engine)
