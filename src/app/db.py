@@ -47,7 +47,6 @@ class Course(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     description = Column(String)
-    # creator
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
     students = relationship('Student',
@@ -59,7 +58,8 @@ class Course(Base):
     teachers = relationship('Teacher',
                             secondary=course_teachers,
                             back_populates='courses')
-    # state (en edición, abierto)
+    # creator = Column(UUID(as_uuid=True))
+    # status (en edición, abierto)
     # bloqueado (bool)
 
     def __init__(self, name, id=None, description='', content=[], students=[], hashtags=[], teachers=[]):
@@ -84,7 +84,7 @@ class Student(Base):  # many to many relationship
     courses = relationship('Course',
                            secondary=course_students,
                            back_populates='students')
-    # completed = NULL, y una nota si lo termino
+    # completed = NULL, o una nota si el curso fue terminado
 
 
 class Hashtag(Base):  # many to many relationship

@@ -6,7 +6,7 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.orm import sessionmaker
 
 from api.models import CourseRequest, CourseResponse, CourseDetailResponse
-from db import Course, Student
+from db import Course, Student, Teacher
 
 
 router = APIRouter()
@@ -111,7 +111,7 @@ async def update(id: str, request: CourseRequest):
     return {'id': course.id, 'name': course.name}
 
 
-@ router.get('/students/{courseId}')
+@ router.get('/{courseId}/students')
 async def get_students(courseId: str):
     students = []
     try:
@@ -130,7 +130,7 @@ async def get_students(courseId: str):
     return students
 
 
-@ router.post('/add_student/{courseId}/{userId}')
+@ router.post('/{courseId}/add_student/{userId}')
 async def add_student(courseId: str, userId: str):
     # No se valida que el id de usuario sea correcto
     try:
@@ -143,4 +143,39 @@ async def add_student(courseId: str, userId: str):
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
     course.students.append(Student(userId=userId))
+    return {'courseId': course.id, 'name': course.name}
+
+
+@ router.get('/{courseId}/colaborators')
+async def get_colaborators(courseId: str):
+    colaborators = []
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(
+            status_code=400, content='Invalid id.')
+    if course is None:
+        return JSONResponse(
+            status_code=404, content='Course ' + courseId + ' not found.')
+    if len(course.teachers) == 0:
+        return JSONResponse(status_code=404, content='No colaborators found.')
+    for user in course.teachers:
+        colaborators.append({'id': user.userId})
+    return colaborators
+
+
+@ router.post('/{courseId}/add_colaborator/{userId}')
+async def add_colaborator(courseId: str, userId: str):
+    # No se valida que el id de usuario sea correcto
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(
+            status_code=400, content='Invalid course id.')
+    if course is None:
+        return JSONResponse(
+            status_code=404, content='Course ' + courseId + ' not found.')
+    course.teachers.append(Teacher(userId=userId))
     return {'courseId': course.id, 'name': course.name}

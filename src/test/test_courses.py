@@ -38,6 +38,14 @@ async def add_student(courseId: str, userId: str):
     return await courses.add_student(courseId, userId)
 
 
+async def get_colaborators(courseId: str):
+    return await courses.get_colaborators(courseId)
+
+
+async def add_colaborator(courseId: str, userId: str):
+    return await courses.add_colaborator(courseId, userId)
+
+
 def test_post_and_get_by_id():
     name = 'test_post_and_get_by_id'
     description = 'descripcion'
@@ -193,6 +201,33 @@ def test_get_students_on_empty_course_returns_404():
     courseId = asyncio.run(post(CourseRequest(name='test_add_student')))["id"]
 
     assert asyncio.run(get_students(courseId)
+                       ).status_code == status.HTTP_404_NOT_FOUND
+
+    asyncio.run(delete(courseId))
+
+
+def test_add_and_get_colaborators():
+    courseId = asyncio.run(
+        post(CourseRequest(name='test_add_colaborator')))["id"]
+    userId1 = str(uuid.uuid4())
+    userId2 = str(uuid.uuid4())
+    asyncio.run(add_colaborator(courseId, userId1))
+    asyncio.run(add_colaborator(courseId, userId2))
+
+    colaborators = asyncio.run(get_colaborators(courseId))
+    user1 = {'id': userId1}
+    user2 = {'id': userId2}
+    assert user1 in colaborators
+    assert user2 in colaborators
+
+    asyncio.run(delete(courseId))
+
+
+def test_get_colaborators_on_empty_course_returns_404():
+    courseId = asyncio.run(
+        post(CourseRequest(name='test_add_colaborator')))["id"]
+
+    assert asyncio.run(get_colaborators(courseId)
                        ).status_code == status.HTTP_404_NOT_FOUND
 
     asyncio.run(delete(courseId))
