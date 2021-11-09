@@ -109,7 +109,7 @@ class Content(Base):  # one to many relationship
     __tablename__ = "content"
     id = Column(Integer, primary_key=True)
     content = Column(String, nullable=False)
-    courseId = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
+    course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     course = relationship("Course", back_populates="content")
 
     def __repr__(self):
