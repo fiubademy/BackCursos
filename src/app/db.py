@@ -48,13 +48,13 @@ class Course(Base):
     __tablename__ = "courses"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
-    # owner = Column(UUID(as_uuid=True), nullable=False)
     description = Column(String)
+
+    # owner = Column(UUID(as_uuid=True), nullable=False)
     # open = Column(Boolean, unique=True, default=False)
     # blocked = Column(Boolean, unique=True, default=False)
-
-    # content = relationship('Content', back_populates="course",
-    #                        cascade="all, delete, delete-orphan")
+    content = relationship('Content', back_populates="course",
+                           cascade="all, delete, delete-orphan")
     students = relationship('Student',
                             secondary=course_students,
                             back_populates='courses')
@@ -71,8 +71,8 @@ class Course(Base):
         self.name = name
         # self.owner = owner
         self.description = description
-        # for c in content:
-        #     self.content.append(Content(content=c))
+        for c in content:
+            self.content.append(Content(content=c))
         for user in students:
             self.students.append(Student(user_id=user))
         for hashtag in hashtags:
@@ -109,12 +109,12 @@ class Teacher(Base):  # many to many relationship
                            back_populates='teachers')
 
 
-# class Content(Base):  # one to many relationship
-#     __tablename__ = "content"
-#     id = Column(Integer, primary_key=True)
-#     content = Column(String, nullable=False)
-#     courseId = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
-#     course = relationship("Course", back_populates="content")
+class Content(Base):  # one to many relationship
+    __tablename__ = "content"
+    id = Column(Integer, primary_key=True)
+    content = Column(String, nullable=False)
+    course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
+    course = relationship("Course", back_populates="content")
 
-#     def __repr__(self):
-#         return "<(Content='%s')>" % self.content
+    def __repr__(self):
+        return "<(Content='%s')>" % self.content
