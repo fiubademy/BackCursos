@@ -142,7 +142,7 @@ async def add_student(courseId: str, userId: str):
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
     course.students.append(Student(user_id=userId))
-    return {'courseId': course.id, 'name': course.name}
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Student ' + userId + ' added succesfully.')
 
 
 @ router.get('/{courseId}/colaborators')
@@ -177,7 +177,7 @@ async def add_colaborator(courseId: str, userId: str):
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
     course.teachers.append(Teacher(user_id=userId))
-    return {'courseId': course.id, 'name': course.name}
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Colaborator ' + userId + ' added succesfully.')
 
 
 @ router.get('/{courseId}/hashtags')
@@ -211,4 +211,4 @@ async def add_hashtag(courseId: str, tag: str):
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
     course.hashtags.append(Hashtag(tag=tag))
-    return {'courseId': course.id, 'name': course.name}
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtag ' + tag + ' added succesfully.')
