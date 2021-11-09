@@ -53,8 +53,8 @@ async def get_by_id(id: str = Query(...)):
     return {'name': course.name, 'id': str(course.id)}
 
 
-@router.get('/user/{userId}', response_model=List[CourseResponse])
-async def get_by_user(userId: str = Query(...)):
+@router.get('/student/{userId}', response_model=List[CourseResponse])
+async def get_by_student(userId: str = Query(...)):
     userCourses = []
     try:
         user = session.get(Student, userId)
@@ -126,7 +126,7 @@ async def get_students(courseId: str):
     if len(course.students) == 0:
         return JSONResponse(status_code=404, content='No users found.')
     for user in course.students:
-        students.append({'id': user.userId})
+        students.append({'id': user.user_id})
     return students
 
 
@@ -142,5 +142,5 @@ async def add_student(courseId: str, userId: str):
     if course is None:
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
-    course.students.append(Student(userId=userId))
+    course.students.append(Student(user_id=userId))
     return {'courseId': course.id, 'name': course.name}
