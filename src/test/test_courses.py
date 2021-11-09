@@ -22,8 +22,8 @@ async def get_all(courseName: str = ''):
     return await courses.get_all(courseName)
 
 
-async def get_by_user(userId: str):
-    return await courses.get_by_user(userId)
+async def get_by_student(userId: str):
+    return await courses.get_by_student(userId)
 
 
 async def update(courseId: str, request: CourseRequest):
@@ -166,14 +166,14 @@ def test_get_all_courses():
     asyncio.run(delete(courseId3))
 
 
-def test_get_by_user():
-    name = 'test_get_by_user'
+def test_get_by_student():
+    name = 'test_get_by_student'
     ownerId = str(uuid.uuid4())
     userId = str(uuid.uuid4())
     courseId = asyncio.run(
         post(CourseRequest(owner=ownerId, name=name, students=[userId])))["id"]
 
-    courses = asyncio.run(get_by_user(userId))
+    courses = asyncio.run(get_by_student(userId))
     course = {
         'id': courseId,
         'name': name
@@ -191,7 +191,7 @@ def test_get_by_user_inexistent_returns_404():
     courseId = asyncio.run(
         post(CourseRequest(owner=ownerId, name=name, students=[userId1])))["id"]
 
-    assert asyncio.run(get_by_user(
+    assert asyncio.run(get_by_student(
         userId2)).status_code == status.HTTP_404_NOT_FOUND
 
     asyncio.run(delete(courseId))

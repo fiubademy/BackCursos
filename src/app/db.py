@@ -26,7 +26,7 @@ course_students = Table('course_students', Base.metadata,
                         Column('course_id', ForeignKey(
                             'courses.id'), primary_key=True),
                         Column('student_id', ForeignKey(
-                            'students.userId'), primary_key=True)
+                            'students.user_id'), primary_key=True)
                         )
 
 course_hashtags = Table('course_hashtags', Base.metadata,
@@ -40,7 +40,7 @@ course_teachers = Table('course_teachers', Base.metadata,
                         Column('course_id', ForeignKey(
                             'courses.id'), primary_key=True),
                         Column('teacher_id', ForeignKey(
-                            'teachers.userId'), primary_key=True)
+                            'teachers.user_id'), primary_key=True)
                         )
 
 
@@ -48,13 +48,13 @@ class Course(Base):
     __tablename__ = "courses"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
-    owner = Column(UUID(as_uuid=True), nullable=False)
+    # owner = Column(UUID(as_uuid=True), nullable=False)
     description = Column(String)
     # open = Column(Boolean, unique=True, default=False)
     # blocked = Column(Boolean, unique=True, default=False)
 
-    content = relationship('Content', back_populates="course",
-                           cascade="all, delete, delete-orphan")
+    # content = relationship('Content', back_populates="course",
+    #                        cascade="all, delete, delete-orphan")
     students = relationship('Student',
                             secondary=course_students,
                             back_populates='courses')
@@ -69,23 +69,23 @@ class Course(Base):
         if id is not None:
             self.id = id
         self.name = name
-        self.owner = owner
+        # self.owner = owner
         self.description = description
-        for c in content:
-            self.content.append(Content(content=c))
+        # for c in content:
+        #     self.content.append(Content(content=c))
         for user in students:
-            self.students.append(Student(userId=user))
+            self.students.append(Student(user_id=user))
         for hashtag in hashtags:
             self.hashtags.append(Hashtag(tag=hashtag))
         for user in teachers:
-            self.teachers.append(Teacher(userId=user))
+            self.teachers.append(Teacher(user_id=user))
         # self.open = False
         # self.blocked = False
 
 
 class Student(Base):  # many to many relationship
     __tablename__ = "students"
-    userId = Column(UUID(as_uuid=True), primary_key=True)
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
     courses = relationship('Course',
                            secondary=course_students,
                            back_populates='students')
@@ -103,18 +103,18 @@ class Hashtag(Base):  # many to many relationship
 
 class Teacher(Base):  # many to many relationship
     __tablename__ = "teachers"
-    userId = Column(UUID(as_uuid=True), primary_key=True)
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
     courses = relationship('Course',
                            secondary=course_teachers,
                            back_populates='teachers')
 
 
-class Content(Base):  # one to many relationship
-    __tablename__ = "content"
-    id = Column(Integer, primary_key=True)
-    content = Column(String, nullable=False)
-    courseId = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
-    course = relationship("Course", back_populates="content")
+# class Content(Base):  # one to many relationship
+#     __tablename__ = "content"
+#     id = Column(Integer, primary_key=True)
+#     content = Column(String, nullable=False)
+#     courseId = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
+#     course = relationship("Course", back_populates="content")
 
-    def __repr__(self):
-        return "<(Content='%s')>" % self.content
+#     def __repr__(self):
+#         return "<(Content='%s')>" % self.content
