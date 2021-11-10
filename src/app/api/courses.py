@@ -62,6 +62,8 @@ async def get_by_student(userId: str = Query(...)):
     for course in user.courses:
         userCourses.append(
             {'id': str(course.id), 'name': course.name})
+    if len(userCourses) == 0:
+        return JSONResponse(status_code=404, content="No courses found")
     return userCourses
 
 
@@ -95,7 +97,7 @@ async def update(id: str, request: CourseRequest):
         session.rollback()
         return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + id + ' not found and will not be deleted.')
+        return JSONResponse(status_code=404, content='Course ' + id + ' not found and will not be updated.')
     attributes = request.dict(exclude_unset=True)
     attributes['id'] = course.id
     course = Course(**attributes)
@@ -295,3 +297,16 @@ async def get_owner(courseId: str):
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
     return {"ownerId": course.owner}
+
+
+@router.post('/{courseId}/block')
+async def block(courseId: str):
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid course id.')
+    if course is None:
+        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
+    course.blocked = True
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + courseId + ' was blocked succesfully.')
