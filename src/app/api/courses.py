@@ -1,6 +1,5 @@
 from fastapi import status, APIRouter
 from typing import List, Optional
-from fastapi.param_functions import Query
 from starlette.responses import JSONResponse
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import sessionmaker
@@ -38,7 +37,7 @@ async def get_all(nameFilter: Optional[str] = ''):
 
 
 @router.get('/{id}', response_model=CourseResponse)
-async def get_by_id(id: str = Query(...)):
+async def get_by_id(id: str):
     try:
         course = session.get(Course, id)
     except DataError:
@@ -50,7 +49,7 @@ async def get_by_id(id: str = Query(...)):
 
 
 @router.get('/student/{userId}', response_model=List[CourseResponse])
-async def get_by_student(userId: str = Query(...)):
+async def get_by_student(userId: str):
     userCourses = []
     try:
         user = session.get(Student, userId)
@@ -123,7 +122,7 @@ async def get_students(courseId: str):
     return students
 
 
-@ router.post('/{courseId}/add_student/{userId}')
+@ router.put('/{courseId}/add_student/{userId}')
 async def add_student(courseId: str, userId: str):
     try:
         course = session.get(Course, courseId)
@@ -180,7 +179,7 @@ async def get_colaborators(courseId: str):
     return colaborators
 
 
-@ router.post('/{courseId}/add_colaborator/{userId}')
+@ router.put('/{courseId}/add_colaborator/{userId}')
 async def add_colaborator(courseId: str, userId: str):
     try:
         course = session.get(Course, courseId)
@@ -238,7 +237,7 @@ async def get_hashtags(courseId: str):
     return hashtags
 
 
-@ router.post('/{courseId}/add_hashtag/{tag}')
+@ router.put('/{courseId}/add_hashtag/{tag}')
 async def add_hashtag(courseId: str, tag: str):
     try:
         course = session.get(Course, courseId)
@@ -299,8 +298,8 @@ async def get_owner(courseId: str):
     return {"ownerId": course.owner}
 
 
-@router.post('/{courseId}/block')
-async def block(courseId: str):
+@router.put('/{courseId}/block')
+async def block(courseId: str, block: bool = True):
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -308,5 +307,21 @@ async def block(courseId: str):
         return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
-    course.blocked = True
-    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + courseId + ' was blocked succesfully.')
+    course.blocked = block
+    if block is True:
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + courseId + ' was blocked succesfully.')
+    else:
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + courseId + ' was unblocked succesfully.')
+
+
+@router.put('/{courseId}/status')
+async def change_status(courseId: str, in_edition: bool):
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid course id.')
+    if course is None:
+        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
+    course.in_edition = in_edition
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + courseId + ' status was updated succesfully.')
