@@ -50,8 +50,8 @@ class Course(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     owner = Column(UUID(as_uuid=True), nullable=False)
-    in_edition = Column(Boolean, unique=True, default=True)
-    blocked = Column(Boolean, unique=True, default=False)
+    in_edition = Column(Boolean, default=True)
+    blocked = Column(Boolean, default=False)
 
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
