@@ -65,20 +65,12 @@ class Course(Base):
                             secondary=course_teachers,
                             back_populates='courses')
 
-    def __init__(self, name, owner, id=None, description='', content=[], students=[], hashtags=[], teachers=[]):
+    def __init__(self, name, owner, id=None, description=''):
         if id is not None:
             self.id = id
         self.name = name
-        # self.owner = owner
         self.description = description
-        for c in content:
-            self.content.append(Content(content=c))
-        for user in students:
-            self.students.append(Student(user_id=user))
-        for hashtag in hashtags:
-            self.hashtags.append(Hashtag(tag=hashtag))
-        for user in teachers:
-            self.teachers.append(Teacher(user_id=user))
+        # self.owner = owner
         # self.open = False
         # self.blocked = False
 

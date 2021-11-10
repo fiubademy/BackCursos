@@ -24,7 +24,7 @@ def set_engine(engine_rcvd):
 
 @router.get('', response_model=List[CourseResponse])
 async def get_all(nameFilter: Optional[str] = ''):
-    mensaje = []
+    response = []
     if nameFilter != '':
         courses = session.query(Course).filter(
             Course.name.ilike("%"+nameFilter+"%"))
@@ -33,9 +33,8 @@ async def get_all(nameFilter: Optional[str] = ''):
     if courses.first() is None:
         return JSONResponse(status_code=404, content="No courses found")
     for course in courses:
-        mensaje.append(
-            {'id': str(course.id), 'name': course.name})
-    return mensaje
+        response.append({'id': str(course.id), 'name': course.name})
+    return response
 
 
 @router.get('/{id}', response_model=CourseResponse)
@@ -44,11 +43,9 @@ async def get_by_id(id: str = Query(...)):
         course = session.get(Course, id)
     except DataError:
         session.rollback()
-        return JSONResponse(
-            status_code=400, content='Invalid id.')
+        return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
-        return JSONResponse(
-            status_code=404, content='Course ' + id + ' not found.')
+        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
     return {'name': course.name, 'id': str(course.id)}
 
 
@@ -59,8 +56,7 @@ async def get_by_student(userId: str = Query(...)):
         user = session.get(Student, userId)
     except DataError:
         session.rollback()
-        return JSONResponse(
-            status_code=400, content='Invalid user id.')
+        return JSONResponse(status_code=400, content='Invalid user id.')
     if user is None:
         return JSONResponse(status_code=404, content="No courses found")
     for course in user.courses:
@@ -117,11 +113,9 @@ async def get_students(courseId: str):
         course = session.get(Course, courseId)
     except DataError:
         session.rollback()
-        return JSONResponse(
-            status_code=400, content='Invalid id.')
+        return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
-        return JSONResponse(
-            status_code=404, content='Course ' + courseId + ' not found.')
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
     if len(course.students) == 0:
         return JSONResponse(status_code=404, content='No users found.')
     for user in course.students:
@@ -131,17 +125,23 @@ async def get_students(courseId: str):
 
 @ router.post('/{courseId}/add_student/{userId}')
 async def add_student(courseId: str, userId: str):
-    # No se valida que el id de usuario sea correcto
     try:
         course = session.get(Course, courseId)
     except DataError:
         session.rollback()
-        return JSONResponse(
-            status_code=400, content='Invalid course id.')
+        return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
-        return JSONResponse(
-            status_code=404, content='Course ' + courseId + ' not found.')
-    course.students.append(Student(user_id=userId))
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
+
+    try:
+        student = session.get(Student, userId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid user id.')
+    if student is None:
+        course.students.append(Student(user_id=userId))
+    elif student not in course.students:
+        course.students.append(student)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Student ' + userId + ' added succesfully.')
 
 
@@ -152,11 +152,9 @@ async def get_colaborators(courseId: str):
         course = session.get(Course, courseId)
     except DataError:
         session.rollback()
-        return JSONResponse(
-            status_code=400, content='Invalid id.')
+        return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
-        return JSONResponse(
-            status_code=404, content='Course ' + courseId + ' not found.')
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
     if len(course.teachers) == 0:
         return JSONResponse(status_code=404, content='No colaborators found.')
     for user in course.teachers:
@@ -166,17 +164,23 @@ async def get_colaborators(courseId: str):
 
 @ router.post('/{courseId}/add_colaborator/{userId}')
 async def add_colaborator(courseId: str, userId: str):
-    # No se valida que el id de usuario sea correcto
     try:
         course = session.get(Course, courseId)
     except DataError:
         session.rollback()
-        return JSONResponse(
-            status_code=400, content='Invalid course id.')
+        return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
-        return JSONResponse(
-            status_code=404, content='Course ' + courseId + ' not found.')
-    course.teachers.append(Teacher(user_id=userId))
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
+
+    try:
+        teacher = session.get(Teacher, userId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid user id.')
+    if teacher is None:
+        course.teachers.append(Teacher(user_id=userId))
+    elif teacher not in course.teachers:
+        course.teachers.append(teacher)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Colaborator ' + userId + ' added succesfully.')
 
 
@@ -187,8 +191,7 @@ async def get_hashtags(courseId: str):
         course = session.get(Course, courseId)
     except DataError:
         session.rollback()
-        return JSONResponse(
-            status_code=400, content='Invalid id.')
+        return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
@@ -205,10 +208,25 @@ async def add_hashtag(courseId: str, tag: str):
         course = session.get(Course, courseId)
     except DataError:
         session.rollback()
-        return JSONResponse(
-            status_code=400, content='Invalid course id.')
+        return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
-        return JSONResponse(
-            status_code=404, content='Course ' + courseId + ' not found.')
-    course.hashtags.append(Hashtag(tag=tag))
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtag ' + tag + ' added succesfully.')
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
+    hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
+    if hashtag is None:
+        course.hashtags.append(Hashtag(tag=tag))
+    elif hashtag not in course.hashtags:
+        course.hashtags.append(hashtag)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtag \'' + tag + '\' added succesfully.')
+
+
+@router.get('/hashtag/{tag}')
+async def get_by_hashtag(tag: str):
+    response = []
+    courses = session.query(Course).filter(
+        Course.hashtags.any(tag=tag))
+    if courses.first() is None:
+        return JSONResponse(status_code=404, content="No courses found")
+    for course in courses:
+        response.append(
+            {'id': str(course.id), 'name': course.name})
+    return response
