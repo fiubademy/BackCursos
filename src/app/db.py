@@ -9,7 +9,9 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relation, relationship
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql.sqltypes import Boolean
 import uuid
+
 
 DATABASE_URL = "postgresql://jhveahofefzvsq:eb0250343f5b7772d0db89b4c6ac263c7d1c891b956d4f38527acfc2ba0e88b6@ec2-3-221-100-217.compute-1.amazonaws.com:5432/d9bj3e61otop9n"
 engine = create_engine(DATABASE_URL)
@@ -47,7 +49,10 @@ class Course(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     description = Column(String)
-    # creator
+
+    # owner = Column(UUID(as_uuid=True), nullable=False)
+    # open = Column(Boolean, unique=True, default=False)
+    # blocked = Column(Boolean, unique=True, default=False)
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
     students = relationship('Student',
@@ -59,32 +64,24 @@ class Course(Base):
     teachers = relationship('Teacher',
                             secondary=course_teachers,
                             back_populates='courses')
-    # state (en edición, abierto)
-    # bloqueado (bool)
 
-    def __init__(self, name, id=None, description='', content=[], students=[], hashtags=[], teachers=[]):
+    def __init__(self, name, owner, id=None, description=''):
         if id is not None:
             self.id = id
         self.name = name
         self.description = description
-        for c in content:
-            self.content.append(Content(content=c))
-        for user in students:
-            self.students.append(Student(user_id=user))
-        for hashtag in hashtags:
-            self.hashtags.append(Hashtag(tag=hashtag))
-        for user in teachers:
-            self.teachers.append(Teacher(user_id=user))
+        # self.owner = owner
+        # self.open = False
+        # self.blocked = False
 
 
 class Student(Base):  # many to many relationship
     __tablename__ = "students"
-    user_id = Column(UUID(as_uuid=True), primary_key=True,
-                     default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
     courses = relationship('Course',
                            secondary=course_students,
                            back_populates='students')
-    # completed = NULL, y una nota si lo termino
+    # completed = NULL, o una nota si el curso fue terminado
 
 
 class Hashtag(Base):  # many to many relationship
@@ -98,8 +95,7 @@ class Hashtag(Base):  # many to many relationship
 
 class Teacher(Base):  # many to many relationship
     __tablename__ = "teachers"
-    user_id = Column(UUID(as_uuid=True), primary_key=True,
-                     default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
     courses = relationship('Course',
                            secondary=course_teachers,
                            back_populates='teachers')

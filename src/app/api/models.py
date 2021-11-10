@@ -5,11 +5,8 @@ from typing import List, Optional
 
 class CourseRequest(BaseModel):
     name: str
+    owner: str
     description: Optional[str] = ""
-    students: Optional[List] = []
-    hashtags: Optional[List] = []
-    teachers: Optional[List] = []
-    content: Optional[List] = []
 
 
 class CourseResponse(BaseModel):
