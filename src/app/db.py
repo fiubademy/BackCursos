@@ -49,10 +49,10 @@ class Course(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     description = Column(String)
+    owner = Column(UUID(as_uuid=True), nullable=False)
+    in_edition = Column(Boolean, unique=True, default=True)
+    blocked = Column(Boolean, unique=True, default=False)
 
-    # owner = Column(UUID(as_uuid=True), nullable=False)
-    # open = Column(Boolean, unique=True, default=False)
-    # blocked = Column(Boolean, unique=True, default=False)
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
     students = relationship('Student',
@@ -70,9 +70,9 @@ class Course(Base):
             self.id = id
         self.name = name
         self.description = description
-        # self.owner = owner
-        # self.open = False
-        # self.blocked = False
+        self.owner = owner
+        self.in_edition = False
+        self.blocked = False
 
 
 class Student(Base):  # many to many relationship

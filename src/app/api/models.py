@@ -1,11 +1,11 @@
 from pydantic import BaseModel, Field
-
+import uuid
 from typing import List, Optional
 
 
 class CourseRequest(BaseModel):
     name: str
-    owner: str
+    owner: uuid.UUID
     description: Optional[str] = ""
 
 

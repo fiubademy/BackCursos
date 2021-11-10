@@ -283,3 +283,15 @@ async def get_by_hashtag(tag: str):
         response.append(
             {'id': str(course.id), 'name': course.name})
     return response
+
+
+@router.get('/{courseId}/owner')
+async def get_owner(courseId: str):
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid course id.')
+    if course is None:
+        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
+    return {"ownerId": course.owner}
