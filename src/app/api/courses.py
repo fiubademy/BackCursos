@@ -161,9 +161,9 @@ async def remove_student(courseId: str, userId: str):
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Student ' + userId + ' was removed succesfully.')
 
 
-@ router.get('/{courseId}/colaborators')
-async def get_colaborators(courseId: str):
-    colaborators = []
+@ router.get('/{courseId}/collaborators')
+async def get_collaborators(courseId: str):
+    collaborators = []
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -172,14 +172,14 @@ async def get_colaborators(courseId: str):
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
     if len(course.teachers) == 0:
-        return JSONResponse(status_code=404, content='No colaborators found.')
+        return JSONResponse(status_code=404, content='No collaborators found.')
     for user in course.teachers:
-        colaborators.append({'id': user.user_id})
-    return colaborators
+        collaborators.append({'id': user.user_id})
+    return collaborators
 
 
-@ router.post('/{courseId}/add_colaborator/{userId}')
-async def add_colaborator(courseId: str, userId: str):
+@ router.post('/{courseId}/add_collaborator/{userId}')
+async def add_collaborator(courseId: str, userId: str):
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -197,11 +197,11 @@ async def add_colaborator(courseId: str, userId: str):
         course.teachers.append(Teacher(user_id=userId))
     elif teacher not in course.teachers:
         course.teachers.append(teacher)
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Colaborator ' + userId + ' added succesfully.')
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Collaborator ' + userId + ' added succesfully.')
 
 
-@ router.delete('/{courseId}/remove_colaborator/{userId}')
-async def remove_colaborator(courseId: str, userId: str):
+@ router.delete('/{courseId}/remove_collaborator/{userId}')
+async def remove_collaborator(courseId: str, userId: str):
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -215,7 +215,7 @@ async def remove_colaborator(courseId: str, userId: str):
             course.teachers.remove(teacher)
             break
     session.commit()
-    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Colaborator ' + userId + ' was removed succesfully.')
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Collaborator ' + userId + ' was removed succesfully.')
 
 
 @ router.get('/{courseId}/hashtags')
@@ -237,7 +237,7 @@ async def get_hashtags(courseId: str):
 
 
 @ router.post('/{courseId}/add_hashtag/{tag}')
-async def add_hashtag(courseId: str, tag: str):
+async def add_hashtags(courseId: str, tags: List[str]):
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -246,12 +246,13 @@ async def add_hashtag(courseId: str, tag: str):
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
 
-    hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
-    if hashtag is None:
-        course.hashtags.append(Hashtag(tag=tag))
-    elif hashtag not in course.hashtags:
-        course.hashtags.append(hashtag)
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtag \'' + tag + '\' added succesfully.')
+    for tag in tags:
+        hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
+        if hashtag is None:
+            course.hashtags.append(Hashtag(tag=tag))
+        elif hashtag not in course.hashtags:
+            course.hashtags.append(hashtag)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtags added succesfully.')
 
 
 @ router.delete('/{courseId}/remove_hashtag/{tag}')
