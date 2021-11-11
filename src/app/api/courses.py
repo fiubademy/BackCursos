@@ -172,7 +172,7 @@ async def add_collaborator(courseId: UUID, userId: UUID):
 
 @ router.delete('/{courseId}/remove_collaborator/{userId}')
 async def remove_collaborator(courseId: UUID, userId: UUID):
-    removed = True
+    removed = False
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
