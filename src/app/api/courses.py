@@ -76,7 +76,11 @@ async def get_by_student(userId: str):
 async def create(request: CourseRequest):
     new = Course(**request.dict(exclude_unset=True, exclude={"hashtags"}))
     for tag in request.hashtags:
-        new.hashtags.append(Hashtag(tag=tag))
+        hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
+        if hashtag is None:
+            new.hashtags.append(Hashtag(tag=tag))
+        elif hashtag not in new.hashtags:
+            new.hashtags.append(hashtag)
     session.add(new)
     session.commit()
     return {'id': str(new.id)}
