@@ -178,6 +178,7 @@ async def add_student(courseId: str, userId: str):
 
 @ router.delete('/{courseId}/remove_student/{userId}')
 async def remove_student(courseId: str, userId: str):
+    removed = False
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -189,7 +190,11 @@ async def remove_student(courseId: str, userId: str):
     for student in course.students:
         if student.user_id == userId:
             course.students.remove(student)
+            removed = True
             break
+    if not removed:
+        return JSONResponse(status_code=404, content='No student found.')
+
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Student ' + userId + ' was removed succesfully.')
 
@@ -235,6 +240,7 @@ async def add_collaborator(courseId: str, userId: str):
 
 @ router.delete('/{courseId}/remove_collaborator/{userId}')
 async def remove_collaborator(courseId: str, userId: str):
+    removed = True
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -246,7 +252,10 @@ async def remove_collaborator(courseId: str, userId: str):
     for teacher in course.teachers:
         if teacher.user_id == userId:
             course.teachers.remove(teacher)
+            removed = True
             break
+    if not removed:
+        return JSONResponse(status_code=404, content='No collaborator found.')
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Collaborator ' + userId + ' was removed succesfully.')
 
@@ -288,8 +297,9 @@ async def add_hashtags(courseId: str, tags: List[str]):
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtags added succesfully.')
 
 
-@ router.delete('/{courseId}/remove_hashtag/{tag}')
-async def remove_hashtag(courseId: str, tag: str):
+@ router.delete('/{courseId}/remove_hashtags')
+async def remove_hashtags(courseId: str, tags: List[str]):
+    response = ""
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -298,12 +308,16 @@ async def remove_hashtag(courseId: str, tag: str):
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
 
-    for hashtag in course.hashtags:
-        if hashtag.tag == tag:
-            course.hashtags.remove(hashtag)
-            break
+    for tag in tags:
+        for hashtag in course.hashtags:
+            if hashtag.tag == tag:
+                course.hashtags.remove(hashtag)
+                response += f'\'{tag}\', '
+                break
+    if response == "":
+        return JSONResponse(status_code=404, content='No hashtags found.')
     session.commit()
-    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Hashtag \'' + tag + '\' was removed succesfully.')
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Hashtags ' + response + 'were removed succesfully.')
 
 
 @ router.get('/hashtag/{tag}')
