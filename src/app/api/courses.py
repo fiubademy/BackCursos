@@ -5,7 +5,7 @@ from starlette.responses import JSONResponse
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import sessionmaker
 
-from api.models import CourseRequest, CourseResponse, CourseUpdate
+from api.models import CourseRequest, CourseUpdate
 from db import Course, Student, Teacher, Hashtag
 
 router = APIRouter()
@@ -22,7 +22,7 @@ def set_engine(engine_rcvd):
     return session
 
 
-@router.get('', response_model=List[CourseResponse])
+@router.get('')
 async def get_all(nameFilter: Optional[str] = ''):
     response = []
     if nameFilter != '':
@@ -35,7 +35,7 @@ async def get_all(nameFilter: Optional[str] = ''):
     return response
 
 
-@router.get('/{id}', response_model=CourseResponse)
+@router.get('/{id}')
 async def get_by_id(id: str):
     try:
         course = session.get(Course, id)
@@ -56,7 +56,7 @@ async def get_by_id(id: str):
             }
 
 
-@router.get('/student/{userId}', response_model=List[CourseResponse])
+@router.get('/student/{userId}')
 async def get_by_student(userId: str):
     userCourses = []
     try:
@@ -72,7 +72,7 @@ async def get_by_student(userId: str):
     return userCourses
 
 
-@router.post('', response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
+@router.post('')
 async def create(request: CourseRequest):
     new = Course(**request.dict(exclude_unset=True, exclude={"hashtags"}))
     for tag in request.hashtags:

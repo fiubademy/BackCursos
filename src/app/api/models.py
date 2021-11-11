@@ -30,26 +30,3 @@ class CourseUpdate(BaseModel):
             raise ValueError(
                 'valid subscription levels are 0 (Free), 1 (Standard), 2 (Premium)')
         return v
-
-
-class CourseResponse(BaseModel):
-    id: str
-    ownerId: str
-    name: str
-    description: str
-    sub_level: Optional[int]
-    latitude: Optional[float]
-    longitude: Optional[float]
-    hashtags: List
-    time_created: Optional[datetime]
-
-
-class CourseDetailResponse(CourseResponse):
-    description: str
-    students: List
-    hashtags: List
-    teachers: List
-    content: List
-
-    class Config:
-        orm_mode = True
