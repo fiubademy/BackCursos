@@ -73,12 +73,6 @@ def test_post_and_get_by_id():
     asyncio.run(delete(courseId))
 
 
-def test_get_by_bad_id_returns_400():
-    badId = 'abc123'
-    assert asyncio.run(
-        get_by_id(badId)).status_code == status.HTTP_400_BAD_REQUEST
-
-
 def test_get_by_id_inexistent_course_returns_404():
     inexistentId = str(uuid.uuid4())
     assert asyncio.run(
@@ -111,12 +105,6 @@ def test_delete_correctly():
                        ).status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_bad_id_returns_400():
-    badId = 'abc123'
-    assert asyncio.run(
-        delete(badId)).status_code == status.HTTP_400_BAD_REQUEST
-
-
 def test_put_course_correctly():
     name = 'test_put_course_correctly'
     ownerId = str(uuid.uuid4())
@@ -135,15 +123,6 @@ def test_put_course_correctly():
     assert courseObtained["name"] == newName
 
     asyncio.run(delete(courseId))
-
-
-def test_put_bad_id_returns_400():
-    badId = 'abc123'
-    name = 'test_put_bad_id_returns_404'
-    ownerId = str(uuid.uuid4())
-    request = CourseRequest(owner=ownerId, name=name)
-    assert asyncio.run(
-        update(badId, request)).status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_get_all_courses():

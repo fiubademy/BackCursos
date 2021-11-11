@@ -51,7 +51,7 @@ class Course(Base):
     owner = Column(UUID(as_uuid=True), nullable=False)
     in_edition = Column(Boolean, default=True)
     blocked = Column(Boolean, default=False)
-    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    time_created = Column(DateTime(timezone=True), default=func.now())
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     sub_level = Column(Integer, nullable=True)
