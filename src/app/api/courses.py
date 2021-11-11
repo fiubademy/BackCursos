@@ -68,7 +68,9 @@ async def get_by_student(userId: str):
 
 @router.post('', response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
 async def create(request: CourseRequest):
-    new = Course(**request.dict(exclude_unset=True))
+    new = Course(**request.dict(exclude_unset=True, exclude={"hashtags"}))
+    for tag in request.hashtags:
+        new.hashtags.append(Hashtag(tag=tag))
     session.add(new)
     session.commit()
     return {'id': str(new.id), 'name': new.name}
@@ -274,7 +276,7 @@ async def remove_hashtag(courseId: str, tag: str):
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Hashtag \'' + tag + '\' was removed succesfully.')
 
 
-@router.get('/hashtag/{tag}')
+@ router.get('/hashtag/{tag}')
 async def get_by_hashtag(tag: str):
     response = []
     courses = session.query(Course).filter(

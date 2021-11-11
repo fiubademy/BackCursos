@@ -7,6 +7,10 @@ class CourseRequest(BaseModel):
     name: str
     owner: uuid.UUID
     description: Optional[str] = ""
+    sub_level: Optional[int]
+    latitude: Optional[float]
+    longitude: Optional[float]
+    hashtags: Optional[List] = []
 
 
 class CourseResponse(BaseModel):

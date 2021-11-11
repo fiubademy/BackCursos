@@ -1,7 +1,5 @@
 from sqlalchemy import (
     Column,
-    Integer,
-    String,
     Table,
     ForeignKey,
     create_engine
@@ -9,7 +7,8 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relation, relationship
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql.sqltypes import Boolean
+from sqlalchemy.sql import func
+from sqlalchemy.sql.sqltypes import Boolean, DateTime, Float, String, Integer
 import uuid
 
 
@@ -52,6 +51,10 @@ class Course(Base):
     owner = Column(UUID(as_uuid=True), nullable=False)
     in_edition = Column(Boolean, default=True)
     blocked = Column(Boolean, default=False)
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    sub_level = Column(Integer, nullable=True)
 
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
@@ -64,15 +67,6 @@ class Course(Base):
     teachers = relationship('Teacher',
                             secondary=course_teachers,
                             back_populates='courses')
-
-    def __init__(self, name, owner, id=None, description=''):
-        if id is not None:
-            self.id = id
-        self.name = name
-        self.description = description
-        self.owner = owner
-        self.in_edition = False
-        self.blocked = False
 
 
 class Student(Base):  # many to many relationship
