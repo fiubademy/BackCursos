@@ -1,4 +1,3 @@
-from uuid import UUID
 from fastapi import status, APIRouter
 from typing import List, Optional
 from starlette.responses import JSONResponse
@@ -51,7 +50,7 @@ async def get_by_id(id: str):
             'sub_level': course.sub_level,
             'latitude': course.latitude,
             'longitude': course.longitude,
-            'hashtags': course.hashtags,
+            'hashtags': [hashtag.tag for hashtag in course.hashtags],
             'time_created': course.time_created
             }
 
