@@ -94,7 +94,7 @@ def test_post_and_get_by_name():
     courseId = asyncio.run(post(request))['id']
     courses = asyncio.run(get_all(name))
 
-    assert courses[-1]["name"] == name
+    assert courses[0]["id"] == courseId
 
     asyncio.run(delete(courseId))
 
@@ -177,11 +177,8 @@ def test_get_by_student():
     asyncio.run(add_student(courseId, userId))
 
     courses = asyncio.run(get_by_student(userId))
-    course = {
-        'id': courseId,
-        'name': name
-    }
-    assert course in courses
+
+    assert {'id': courseId} in courses
 
     asyncio.run(delete(courseId))
 
@@ -219,17 +216,6 @@ def test_add_and_get_students():
     asyncio.run(delete(courseId))
 
 
-def test_get_students_on_empty_course_returns_404():
-    ownerId = str(uuid.uuid4())
-    courseId = asyncio.run(post(CourseRequest(owner=ownerId,
-                                              name='test_get_students_on_empty_course_returns_404')))["id"]
-
-    assert asyncio.run(get_students(courseId)
-                       ).status_code == status.HTTP_404_NOT_FOUND
-
-    asyncio.run(delete(courseId))
-
-
 def test_add_and_get_collaborators():
     ownerId = str(uuid.uuid4())
     courseId = asyncio.run(
@@ -244,17 +230,6 @@ def test_add_and_get_collaborators():
     user2 = {'id': userId2}
     assert user1 in collaborators
     assert user2 in collaborators
-
-    asyncio.run(delete(courseId))
-
-
-def test_get_collaborators_on_empty_course_returns_404():
-    ownerId = str(uuid.uuid4())
-    courseId = asyncio.run(
-        post(CourseRequest(owner=ownerId, name='test_get_collaborators_on_empty_course_returns_404')))["id"]
-
-    assert asyncio.run(get_collaborators(courseId)
-                       ).status_code == status.HTTP_404_NOT_FOUND
 
     asyncio.run(delete(courseId))
 
@@ -276,17 +251,6 @@ def test_add_and_get_hashtags():
     asyncio.run(delete(courseId))
 
 
-def test_get_hashtags_on_empty_course_returns_404():
-    ownerId = str(uuid.uuid4())
-    courseId = asyncio.run(
-        post(CourseRequest(owner=ownerId, name='test_get_hashtags_on_empty_course_returns_404')))["id"]
-
-    assert asyncio.run(get_hashtags(courseId)
-                       ).status_code == status.HTTP_404_NOT_FOUND
-
-    asyncio.run(delete(courseId))
-
-
 def test_get_by_hashtag():
     name = 'test_get_by_hashtag'
     ownerId = str(uuid.uuid4())
@@ -296,11 +260,8 @@ def test_get_by_hashtag():
     asyncio.run(add_hashtags(courseId, [tag]))
 
     courses = asyncio.run(get_by_hashtag(tag))
-    course = {
-        'id': courseId,
-        'name': name
-    }
-    assert course in courses
+
+    assert {'id': courseId} in courses
 
     asyncio.run(delete(courseId))
 
@@ -319,31 +280,9 @@ def test_get_by_hashtag_two_courses():
     asyncio.run(add_hashtags(courseId2, [tag]))
 
     courses = asyncio.run(get_by_hashtag(tag))
-    course1 = {
-        'id': courseId1,
-        'name': name1
-    }
-    course2 = {
-        'id': courseId2,
-        'name': name2
-    }
-    assert course1 in courses
-    assert course2 in courses
+
+    assert {'id': courseId1} in courses
+    assert {'id': courseId2} in courses
 
     asyncio.run(delete(courseId1))
     asyncio.run(delete(courseId2))
-
-
-def test_get_by_hashtag_inexistent_returns_404():
-    name = 'test_get_by_hashtag_inexistent_returns_404'
-    ownerId = str(uuid.uuid4())
-    tag1 = 'testTag1'
-    tag2 = 'testTag2'
-    courseId = asyncio.run(
-        post(CourseRequest(owner=ownerId, name=name)))["id"]
-    asyncio.run(add_hashtags(courseId, [tag1]))
-
-    assert asyncio.run(get_by_hashtag(
-        tag2)).status_code == status.HTTP_404_NOT_FOUND
-
-    asyncio.run(delete(courseId))
