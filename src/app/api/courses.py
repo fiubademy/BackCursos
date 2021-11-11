@@ -314,7 +314,7 @@ async def get_owner(courseId: str):
         session.rollback()
         return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
     return {"ownerId": course.owner}
 
 
@@ -326,7 +326,7 @@ async def set_block(courseId: str, block: bool = True):
         session.rollback()
         return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
     course.blocked = block
     if block is True:
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + courseId + ' was blocked succesfully.')
