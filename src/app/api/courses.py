@@ -213,6 +213,8 @@ async def add_hashtags(courseId: UUID, tags: List[str]):
             course.hashtags.append(Hashtag(tag=tag))
         elif hashtag not in course.hashtags:
             course.hashtags.append(hashtag)
+
+    session.commit()
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtags added succesfully.')
 
 
@@ -260,6 +262,7 @@ async def set_block(courseId: UUID, block: bool = True):
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
     course.blocked = block
+    session.commit()
     if block is True:
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(courseId) + ' was blocked succesfully.')
     else:
@@ -272,6 +275,7 @@ async def set_status(courseId: UUID, in_edition: bool):
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
     course.in_edition = in_edition
+    session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(courseId) + ' status was updated succesfully.')
 
 
@@ -280,29 +284,59 @@ async def add_content(courseId: UUID, file: UploadFile = File(...)):
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
-    # validar tipo de archivo que sea video/mp4
-    content_bytes = await file.read()
-    # name=filename, migrar db y agregar atributo. Recibir por parametro nombre u otros datos a guardar en el contenido
-    course.content.append(Content(content=content_bytes))
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Content uploaded succesfully.')
+
+    if file.content_type != "video/mp4":
+        return JSONResponse(status_code=400, content='Wrong filetype: expected video/mp4.')
+    content = session.query(Content).filter(
+        Content.name == file.filename).first()
+    if content is None:
+        file_bytes = await file.read()
+        course.content.append(Content(content=file_bytes, name=file.filename))
+    elif content not in course.content:
+        course.content.append(content)
+
+    session.commit()
+    return {'contentId': content.id}
 
 
 @ router.post('/{courseId}/get_content_list')
 async def get_content_list(courseId: UUID):
-    response = []
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
-    for content in course.content:
-        response.append(content.id)
-    return response
+    return [{'id': content.id} for content in course.content]
 
 
-@ router.post('/{courseId}/get_content/{contentId}')
-async def get_content(contentId: int):
+def iterfile(file):  # usar lambda
+    yield from file
+
+
+@ router.post('{courseId}/get_content/{contentId}')
+async def get_content(contentId: UUID):
+    content = session.get(Content, contentId)
+    if content is None:
+        return JSONResponse(status_code=404, content='Content ' + str(contentId) + ' not found.')
+
+    # https://github.com/mpimentel04/rtsp_fastapi/blob/617d7f693151999d96901ec5d15f252478c96891/webstreaming.py#L46
+    return StreamingResponse(iterfile(content.content), media_type="multipart/x-mixed-replace;boundary=frame")
+
+
+@ router.delete('/remove_content/{contentId}')
+async def remove_content(courseId: UUID, contentId: UUID):
+    removed = False
+    course = session.get(Course, courseId)
+    if course is None:
+        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
     content = session.get(Content, contentId)
     if content is None:
         return JSONResponse(status_code=404, content='content ' + str(contentId) + ' not found.')
 
-    return StreamingResponse(content.content, media_type="multipart/x-mixed-replace;boundary=frame")
-    # https://github.com/mpimentel04/rtsp_fastapi/blob/617d7f693151999d96901ec5d15f252478c96891/webstreaming.py#L46
+    for content in course.content:
+        if content.id == contentId:
+            course.content.remove(content)
+            removed = True
+            break
+    if not removed:
+        return JSONResponse(status_code=404, content='No content found.')
+    session.commit()
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Content ' + str(contentId) + ' was deleted succesfully.')
