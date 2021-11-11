@@ -1,6 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, validator, ValidationError
+from datetime import datetime
 import uuid
 from typing import List, Optional
+
+from sqlalchemy.sql.sqltypes import DateTime
 
 
 class CourseRequest(BaseModel):
@@ -21,10 +24,24 @@ class CourseUpdate(BaseModel):
     latitude: Optional[float]
     longitude: Optional[float]
 
+    @validator('sub_level')
+    def sub_level_valid(cls, v):
+        if v > 2 or v < 0:
+            raise ValueError(
+                'valid subscription levels are 0 (Free), 1 (Standard), 2 (Premium)')
+        return v
+
 
 class CourseResponse(BaseModel):
     id: str
+    ownerId: str
     name: str
+    description: str
+    sub_level: Optional[int]
+    latitude: Optional[float]
+    longitude: Optional[float]
+    hashtags: List
+    time_created: Optional[datetime]
 
 
 class CourseDetailResponse(CourseResponse):

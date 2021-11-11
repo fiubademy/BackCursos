@@ -346,7 +346,7 @@ async def get_owner(courseId: str):
 
 
 @router.put('/{courseId}/block')
-async def block(courseId: str, block: bool = True):
+async def set_block(courseId: str, block: bool = True):
     try:
         course = session.get(Course, courseId)
     except DataError:
@@ -362,7 +362,7 @@ async def block(courseId: str, block: bool = True):
 
 
 @router.put('/{courseId}/status')
-async def change_status(courseId: str, in_edition: bool):
+async def set_status(courseId: str, in_edition: bool):
     try:
         course = session.get(Course, courseId)
     except DataError:
