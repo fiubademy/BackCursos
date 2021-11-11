@@ -33,16 +33,7 @@ async def get_all(nameFilter: Optional[str] = ''):
     if courses.first() is None:
         return JSONResponse(status_code=404, content="No courses found")
     for course in courses:
-        response.append({'id': str(course.id),
-                         'ownerId': str(course.owner),
-                         'name': course.name,
-                         'description': course.description,
-                         'sub_level': course.sub_level,
-                         'latitude': course.latitude,
-                         'longitude': course.longitude,
-                         'hashtags': course.hashtags,
-                         'time_created': course.time_created
-                         })
+        response.append({'id': str(course.id)})
     return response
 
 
@@ -79,7 +70,7 @@ async def get_by_student(userId: str):
         return JSONResponse(status_code=404, content="No courses found")
     for course in user.courses:
         userCourses.append(
-            {'id': str(course.id), 'name': course.name})
+            {'id': str(course.id)})
     if len(userCourses) == 0:
         return JSONResponse(status_code=404, content="No courses found")
     return userCourses
@@ -92,7 +83,7 @@ async def create(request: CourseRequest):
         new.hashtags.append(Hashtag(tag=tag))
     session.add(new)
     session.commit()
-    return {'id': str(new.id), 'name': new.name}
+    return {'id': str(new.id)}
 
 
 @ router.delete('/{id}')
@@ -125,16 +116,7 @@ async def update(id: str, request: CourseUpdate):
 
     session.merge(course)
     session.commit()
-    return {'id': str(course.id),
-            'ownerId': str(course.owner),
-            'name': course.name,
-            'description': course.description,
-            'sub_level': course.sub_level,
-            'latitude': course.latitude,
-            'longitude': course.longitude,
-            'hashtags': course.hashtags,
-            'time_created': course.time_created
-            }
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + id + ' was updated succesfully.')
 
 
 @ router.get('/{courseId}/students')
@@ -329,7 +311,7 @@ async def get_by_hashtag(tag: str):
         return JSONResponse(status_code=404, content="No courses found")
     for course in courses:
         response.append(
-            {'id': str(course.id), 'name': course.name})
+            {'id': str(course.id)})
     return response
 
 

@@ -94,7 +94,7 @@ def test_post_and_get_by_name():
     courseId = asyncio.run(post(request))['id']
     courses = asyncio.run(get_all(name))
 
-    assert courses[-1]["name"] == name
+    assert courses[0]["id"] == courseId
 
     asyncio.run(delete(courseId))
 
@@ -177,11 +177,8 @@ def test_get_by_student():
     asyncio.run(add_student(courseId, userId))
 
     courses = asyncio.run(get_by_student(userId))
-    course = {
-        'id': courseId,
-        'name': name
-    }
-    assert course in courses
+
+    assert {'id': courseId} in courses
 
     asyncio.run(delete(courseId))
 
@@ -296,11 +293,8 @@ def test_get_by_hashtag():
     asyncio.run(add_hashtags(courseId, [tag]))
 
     courses = asyncio.run(get_by_hashtag(tag))
-    course = {
-        'id': courseId,
-        'name': name
-    }
-    assert course in courses
+
+    assert {'id': courseId} in courses
 
     asyncio.run(delete(courseId))
 
@@ -319,16 +313,9 @@ def test_get_by_hashtag_two_courses():
     asyncio.run(add_hashtags(courseId2, [tag]))
 
     courses = asyncio.run(get_by_hashtag(tag))
-    course1 = {
-        'id': courseId1,
-        'name': name1
-    }
-    course2 = {
-        'id': courseId2,
-        'name': name2
-    }
-    assert course1 in courses
-    assert course2 in courses
+
+    assert {'id': courseId1} in courses
+    assert {'id': courseId2} in courses
 
     asyncio.run(delete(courseId1))
     asyncio.run(delete(courseId2))
