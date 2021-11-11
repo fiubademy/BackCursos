@@ -1,12 +1,12 @@
-from uuid import UUID
-from fastapi import status, APIRouter
+import io
+from fastapi import status, APIRouter, File, UploadFile
 from typing import List, Optional
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, StreamingResponse
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import sessionmaker
 
 from api.models import CourseRequest, CourseUpdate
-from db import Course, Student, Teacher, Hashtag
+from db import Course, Student, Teacher, Hashtag, Content
 
 router = APIRouter()
 
@@ -76,7 +76,12 @@ async def get_by_student(userId: str):
 async def create(request: CourseRequest):
     new = Course(**request.dict(exclude_unset=True, exclude={"hashtags"}))
     for tag in request.hashtags:
-        new.hashtags.append(Hashtag(tag=tag))
+        hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
+        if hashtag is None:
+            new.hashtags.append(Hashtag(tag=tag))
+        elif hashtag not in new.hashtags:
+            new.hashtags.append(hashtag)
+
     session.add(new)
     session.commit()
     return {'id': str(new.id)}
@@ -342,3 +347,48 @@ async def set_status(courseId: str, in_edition: bool):
         return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
     course.in_edition = in_edition
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + courseId + ' status was updated succesfully.')
+
+
+@ router.post('/{courseId}/add_content')
+async def add_content(courseId: str, file: UploadFile = File(...)):
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid course id.')
+    if course is None:
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
+    # validar tipo de archivo que sea video/mp4
+    content_bytes = await file.read()
+    # name=filename, migrar db y agregar atributo. Recibir por parametro nombre u otros datos a guardar en el contenido
+    course.content.append(Content(content=content_bytes))
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Content uploaded succesfully.')
+
+
+@ router.post('/{courseId}/get_content_list')
+async def get_content_list(courseId: str):
+    response = []
+    try:
+        course = session.get(Course, courseId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid course id.')
+    if course is None:
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
+    for content in course.content:
+        response.append(content.id)
+    return response
+
+
+@ router.post('/{courseId}/get_content/{contentId}')
+async def get_content(contentId: int):
+    try:
+        content = session.get(Content, contentId)
+    except DataError:
+        session.rollback()
+        return JSONResponse(status_code=400, content='Invalid content id.')
+    if content is None:
+        return JSONResponse(status_code=404, content='content ' + str(contentId) + ' not found.')
+
+    return StreamingResponse(content.content, media_type="multipart/x-mixed-replace;boundary=frame")
+    # https://github.com/mpimentel04/rtsp_fastapi/blob/617d7f693151999d96901ec5d15f252478c96891/webstreaming.py#L46

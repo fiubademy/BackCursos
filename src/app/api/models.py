@@ -1,9 +1,6 @@
-from pydantic import BaseModel, validator, ValidationError
-from datetime import datetime
+from pydantic import BaseModel, validator
 import uuid
 from typing import List, Optional
-
-from sqlalchemy.sql.sqltypes import DateTime
 
 
 class CourseRequest(BaseModel):

@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relation, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from sqlalchemy.sql.sqltypes import Boolean, DateTime, Float, String, Integer
+from sqlalchemy.sql.sqltypes import Boolean, DateTime, Float, LargeBinary, String, Integer
 import uuid
 
 
@@ -98,9 +98,7 @@ class Teacher(Base):  # many to many relationship
 class Content(Base):  # one to many relationship
     __tablename__ = "content"
     id = Column(Integer, primary_key=True)
-    content = Column(String, nullable=False)
+    content = Column(LargeBinary, nullable=False)
     course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     course = relationship("Course", back_populates="content")
-
-    def __repr__(self):
-        return "<(Content='%s')>" % self.content
+    # name
