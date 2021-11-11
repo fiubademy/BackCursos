@@ -32,7 +32,15 @@ async def get_all(nameFilter: Optional[str] = ''):
     if courses.first() is None:
         return JSONResponse(status_code=404, content="No courses found")
     for course in courses:
-        response.append({'id': str(course.id), 'name': course.name})
+        response.append({'id': str(course.id),
+                         'ownerId': str(course.owner),
+                         'description': course.description,
+                         'sub_level': course.sub_level,
+                         'latitude': course.latitude,
+                         'longitude': course.longitude,
+                         'hashtags': course.hashtags,
+                         'time_created': course.time_created
+                         })
     return response
 
 
@@ -45,7 +53,15 @@ async def get_by_id(id: str):
         return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
-    return {'name': course.name, 'id': str(course.id)}
+    return {'id': str(course.id),
+            'ownerId': str(course.owner),
+            'description': course.description,
+            'sub_level': course.sub_level,
+            'latitude': course.latitude,
+            'longitude': course.longitude,
+            'hashtags': course.hashtags,
+            'time_created': course.time_created
+            }
 
 
 @router.get('/student/{userId}', response_model=List[CourseResponse])
