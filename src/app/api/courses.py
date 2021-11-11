@@ -30,8 +30,6 @@ async def get_all(nameFilter: Optional[str] = ''):
             Course.name.ilike("%"+nameFilter+"%"))
     else:
         courses = session.query(Course)
-    if courses.first() is None:
-        return JSONResponse(status_code=404, content="No courses found")
     for course in courses:
         response.append({'id': str(course.id)})
     return response
@@ -67,12 +65,10 @@ async def get_by_student(userId: str):
         session.rollback()
         return JSONResponse(status_code=400, content='Invalid user id.')
     if user is None:
-        return JSONResponse(status_code=404, content="No courses found")
+        return JSONResponse(status_code=404, content="No user found")
     for course in user.courses:
         userCourses.append(
             {'id': str(course.id)})
-    if len(userCourses) == 0:
-        return JSONResponse(status_code=404, content="No courses found")
     return userCourses
 
 
@@ -129,8 +125,6 @@ async def get_students(courseId: str):
         return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
-    if len(course.students) == 0:
-        return JSONResponse(status_code=404, content='No users found.')
     for user in course.students:
         students.append({'id': user.user_id})
     return students
@@ -191,8 +185,6 @@ async def get_collaborators(courseId: str):
         return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
-    if len(course.teachers) == 0:
-        return JSONResponse(status_code=404, content='No collaborators found.')
     for user in course.teachers:
         collaborators.append({'id': user.user_id})
     return collaborators
@@ -253,8 +245,6 @@ async def get_hashtags(courseId: str):
     if course is None:
         return JSONResponse(
             status_code=404, content='Course ' + courseId + ' not found.')
-    if len(course.hashtags) == 0:
-        return JSONResponse(status_code=404, content='No hashtags found.')
     for hashtag in course.hashtags:
         hashtags.append({'hashtag': hashtag.tag})
     return hashtags
@@ -307,8 +297,6 @@ async def get_by_hashtag(tag: str):
     response = []
     courses = session.query(Course).filter(
         Course.hashtags.any(tag=tag))
-    if courses.first() is None:
-        return JSONResponse(status_code=404, content="No courses found")
     for course in courses:
         response.append(
             {'id': str(course.id)})
