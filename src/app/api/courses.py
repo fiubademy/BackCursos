@@ -164,7 +164,7 @@ async def remove_student(courseId: str, userId: str):
         session.rollback()
         return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
 
     for student in course.students:
         if student.user_id == userId:
@@ -224,7 +224,7 @@ async def remove_collaborator(courseId: str, userId: str):
         session.rollback()
         return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
 
     for teacher in course.teachers:
         if teacher.user_id == userId:
@@ -281,7 +281,7 @@ async def remove_hashtags(courseId: str, tags: List[str]):
         session.rollback()
         return JSONResponse(status_code=400, content='Invalid course id.')
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
+        return JSONResponse(status_code=404, content='Course ' + courseId + ' not found.')
 
     for tag in tags:
         for hashtag in course.hashtags:
