@@ -13,6 +13,15 @@ class CourseRequest(BaseModel):
     hashtags: Optional[List] = []
 
 
+class CourseUpdate(BaseModel):
+    name: Optional[str]
+    owner: Optional[uuid.UUID]
+    description: Optional[str]
+    sub_level: Optional[int]
+    latitude: Optional[float]
+    longitude: Optional[float]
+
+
 class CourseResponse(BaseModel):
     id: str
     name: str

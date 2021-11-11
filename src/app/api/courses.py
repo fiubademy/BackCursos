@@ -1,10 +1,11 @@
+from uuid import UUID
 from fastapi import status, APIRouter
 from typing import List, Optional
 from starlette.responses import JSONResponse
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm import sessionmaker
 
-from api.models import CourseRequest, CourseResponse, CourseDetailResponse
+from api.models import CourseRequest, CourseResponse, CourseUpdate
 from db import Course, Student, Teacher, Hashtag
 
 router = APIRouter()
@@ -34,6 +35,7 @@ async def get_all(nameFilter: Optional[str] = ''):
     for course in courses:
         response.append({'id': str(course.id),
                          'ownerId': str(course.owner),
+                         'name': course.name,
                          'description': course.description,
                          'sub_level': course.sub_level,
                          'latitude': course.latitude,
@@ -55,6 +57,7 @@ async def get_by_id(id: str):
         return JSONResponse(status_code=404, content='Course ' + id + ' not found.')
     return {'id': str(course.id),
             'ownerId': str(course.owner),
+            'name': course.name,
             'description': course.description,
             'sub_level': course.sub_level,
             'latitude': course.latitude,
@@ -106,8 +109,8 @@ async def delete(id: str):
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + id + ' was deleted succesfully.')
 
 
-@ router.put('/{id}')
-async def update(id: str, request: CourseRequest):
+@ router.patch('/{id}')
+async def update(id: str, request: CourseUpdate):
     try:
         course = session.get(Course, id)
     except DataError:
@@ -115,12 +118,23 @@ async def update(id: str, request: CourseRequest):
         return JSONResponse(status_code=400, content='Invalid id.')
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + id + ' not found and will not be updated.')
-    attributes = request.dict(exclude_unset=True)
-    attributes['id'] = course.id
-    course = Course(**attributes)
+
+    attributes = request.dict(exclude_unset=True, exclude_none=True)
+    for att, value in attributes.items():
+        setattr(course, att, value)
+
     session.merge(course)
     session.commit()
-    return {'id': course.id, 'name': course.name}
+    return {'id': str(course.id),
+            'ownerId': str(course.owner),
+            'name': course.name,
+            'description': course.description,
+            'sub_level': course.sub_level,
+            'latitude': course.latitude,
+            'longitude': course.longitude,
+            'hashtags': course.hashtags,
+            'time_created': course.time_created
+            }
 
 
 @ router.get('/{courseId}/students')
