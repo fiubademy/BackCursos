@@ -97,8 +97,7 @@ class Teacher(Base):  # many to many relationship
 
 class Content(Base):  # one to many relationship
     __tablename__ = "content"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    content = Column(LargeBinary, nullable=False)  # change to file
+    id = Column(Integer, primary_key=True)
+    content = Column(String, nullable=False)
     course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     course = relationship("Course", back_populates="content")
-    name = Column(String, nullable=False, default="unknown.mp4")

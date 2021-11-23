@@ -7,6 +7,9 @@ from sqlalchemy.orm import sessionmaker
 from api.models import CourseRequest, CourseUpdate
 from db import Course, Student, Teacher, Hashtag, Content
 
+PER_PAGE = 5
+
+
 router = APIRouter()
 
 session = None
@@ -21,20 +24,49 @@ def set_engine(engine_rcvd):
     return session
 
 
-@router.get('')
-async def get_all(nameFilter: Optional[str] = ''):
-    response = []
-    if nameFilter != '':
-        courses = session.query(Course).filter(
-            Course.name.ilike("%"+nameFilter+"%"))
+@router.get('/{page_num}')
+async def get_courses(
+    page_num: int,
+    name: Optional[str] = None,
+    owner: Optional[UUID] = None,
+    description: Optional[str] = None,
+    sub_level: Optional[int] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None
+):
+    query = session.query(Course)
+    if name:
+        query = query.filter(Course.name.ilike(f'%{name}%'))
+    if owner:
+        query = query.filter(Course.owner == owner)
+    if description:
+        query = query.filter(Course.description.ilike(f'%{description}%'))
+    if sub_level:
+        query = query.filter(Course.sub_level == sub_level)
+    if latitude:
+        query = query.filter(Course.latitude == latitude)
+    if longitude:
+        query = query.filter(Course.longitude == longitude)
+    count = query.count()
+    query = query.limit(PER_PAGE).offset((page_num-1)*PER_PAGE)
+    if (count/PER_PAGE - int(count/PER_PAGE) == 0):
+        num_pages = int(count/PER_PAGE)
     else:
-        courses = session.query(Course)
-    for course in courses:
-        response.append({'id': str(course.id)})
-    return response
+        num_pages = int(count/PER_PAGE)+1
+    return {'num_pages': num_pages, 'content': [{
+        'id': str(course.id),
+        'ownerId': str(course.owner),
+        'name': course.name,
+        'description': course.description,
+        'sub_level': course.sub_level,
+        'latitude': course.latitude,
+        'longitude': course.longitude,
+        'hashtags': [hashtag.tag for hashtag in course.hashtags],
+        'time_created': course.time_created
+    } for course in query]}
 
 
-@router.get('/{id}')
+@ router.get('/{id}')
 async def get_by_id(id: UUID):
     course = session.get(Course, id)
     if course is None:
@@ -51,7 +83,7 @@ async def get_by_id(id: UUID):
             }
 
 
-@router.get('/student/{userId}')
+@ router.get('/student/{userId}')
 async def get_by_student(userId: UUID):
     userCourses = []
     user = session.get(Student, userId)
@@ -63,7 +95,19 @@ async def get_by_student(userId: UUID):
     return userCourses
 
 
-@router.post('')
+@ router.get('/collaborator/{userId}')
+async def get_by_collaborator(userId: UUID):
+    userCourses = []
+    user = session.get(Teacher, userId)
+    if user is None:
+        return JSONResponse(status_code=404, content="No user found")
+    for course in user.courses:
+        userCourses.append(
+            {'id': str(course.id)})
+    return userCourses
+
+
+@ router.post('')
 async def create(request: CourseRequest):
     new = Course(**request.dict(exclude_unset=True, exclude={"hashtags"}))
     for tag in request.hashtags:
@@ -248,7 +292,7 @@ async def get_by_hashtag(tag: str):
     return response
 
 
-@router.get('/{courseId}/owner')
+@ router.get('/{courseId}/owner')
 async def get_owner(courseId: UUID):
     course = session.get(Course, courseId)
     if course is None:
@@ -256,7 +300,7 @@ async def get_owner(courseId: UUID):
     return {"ownerId": course.owner}
 
 
-@router.put('/{courseId}/block')
+@ router.put('/{courseId}/block')
 async def set_block(courseId: UUID, block: bool = True):
     course = session.get(Course, courseId)
     if course is None:
@@ -269,7 +313,7 @@ async def set_block(courseId: UUID, block: bool = True):
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(courseId) + ' was unblocked succesfully.')
 
 
-@router.put('/{courseId}/status')
+@ router.put('/{courseId}/status')
 async def set_status(courseId: UUID, in_edition: bool):
     course = session.get(Course, courseId)
     if course is None:
@@ -277,66 +321,3 @@ async def set_status(courseId: UUID, in_edition: bool):
     course.in_edition = in_edition
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(courseId) + ' status was updated succesfully.')
-
-
-@ router.post('/{courseId}/add_content')
-async def add_content(courseId: UUID, file: UploadFile = File(...)):
-    course = session.get(Course, courseId)
-    if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
-
-    if file.content_type != "video/mp4":
-        return JSONResponse(status_code=400, content='Wrong filetype: expected video/mp4.')
-    content = session.query(Content).filter(
-        Content.name == file.filename).first()
-    if content is None:
-        file_bytes = await file.read()
-        course.content.append(Content(content=file_bytes, name=file.filename))
-    elif content not in course.content:
-        course.content.append(content)
-
-    session.commit()
-    return {'contentId': content.id}
-
-
-@ router.post('/{courseId}/get_content_list')
-async def get_content_list(courseId: UUID):
-    course = session.get(Course, courseId)
-    if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
-    return [{'id': content.id} for content in course.content]
-
-
-def iterfile(file):  # usar lambda
-    yield from file
-
-
-@ router.post('{courseId}/get_content/{contentId}')
-async def get_content(contentId: UUID):
-    content = session.get(Content, contentId)
-    if content is None:
-        return JSONResponse(status_code=404, content='Content ' + str(contentId) + ' not found.')
-
-    # https://github.com/mpimentel04/rtsp_fastapi/blob/617d7f693151999d96901ec5d15f252478c96891/webstreaming.py#L46
-    return StreamingResponse(iterfile(content.content), media_type="multipart/x-mixed-replace;boundary=frame")
-
-
-@ router.delete('/remove_content/{contentId}')
-async def remove_content(courseId: UUID, contentId: UUID):
-    removed = False
-    course = session.get(Course, courseId)
-    if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
-    content = session.get(Content, contentId)
-    if content is None:
-        return JSONResponse(status_code=404, content='content ' + str(contentId) + ' not found.')
-
-    for content in course.content:
-        if content.id == contentId:
-            course.content.remove(content)
-            removed = True
-            break
-    if not removed:
-        return JSONResponse(status_code=404, content='No content found.')
-    session.commit()
-    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Content ' + str(contentId) + ' was deleted succesfully.')
