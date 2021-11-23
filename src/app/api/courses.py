@@ -1,11 +1,14 @@
 from uuid import UUID
-from fastapi import status, APIRouter
-from typing import List, Optional
+from fastapi import status, APIRouter, Depends
+from typing import List
 from starlette.responses import JSONResponse
 from sqlalchemy.orm import sessionmaker
 
-from api.models import CourseRequest, CourseUpdate
-from db import Course, Student, Teacher, Hashtag
+from api.models import CourseCreate, CourseUpdate, CourseFilter
+from db import Course, Student, Teacher, Hashtag, Content
+
+PER_PAGE = 5
+
 
 router = APIRouter()
 
@@ -21,20 +24,45 @@ def set_engine(engine_rcvd):
     return session
 
 
-@router.get('')
-async def get_all(nameFilter: Optional[str] = ''):
-    response = []
-    if nameFilter != '':
-        courses = session.query(Course).filter(
-            Course.name.ilike("%"+nameFilter+"%"))
+@router.get('/all/{page_num}')
+async def get_courses(
+    page_num: int,
+    filter: CourseFilter = Depends()
+):
+    query = session.query(Course)
+    if filter.name:
+        query = query.filter(Course.name.ilike(f'%{filter.name}%'))
+    if filter.owner:
+        query = query.filter(Course.owner == filter.owner)
+    if filter.description:
+        query = query.filter(
+            Course.description.ilike(f'%{filter.description}%'))
+    if filter.sub_level:
+        query = query.filter(Course.sub_level == filter.sub_level)
+    if filter.latitude:
+        query = query.filter(Course.latitude == filter.latitude)
+    if filter.longitude:
+        query = query.filter(Course.longitude == filter.longitude)
+    count = query.count()
+    query = query.limit(PER_PAGE).offset((page_num-1)*PER_PAGE)
+    if (count/PER_PAGE - int(count/PER_PAGE) == 0):
+        num_pages = int(count/PER_PAGE)
     else:
-        courses = session.query(Course)
-    for course in courses:
-        response.append({'id': str(course.id)})
-    return response
+        num_pages = int(count/PER_PAGE)+1
+    return {'num_pages': num_pages, 'content': [{
+        'id': str(course.id),
+        'ownerId': str(course.owner),
+        'name': course.name,
+        'description': course.description,
+        'sub_level': course.sub_level,
+        'latitude': course.latitude,
+        'longitude': course.longitude,
+        'hashtags': [hashtag.tag for hashtag in course.hashtags],
+        'time_created': course.time_created
+    } for course in query]}
 
 
-@router.get('/{id}')
+@ router.get('/{id}')
 async def get_by_id(id: UUID):
     course = session.get(Course, id)
     if course is None:
@@ -51,7 +79,7 @@ async def get_by_id(id: UUID):
             }
 
 
-@router.get('/student/{userId}')
+@ router.get('/student/{userId}')
 async def get_by_student(userId: UUID):
     userCourses = []
     user = session.get(Student, userId)
@@ -63,8 +91,20 @@ async def get_by_student(userId: UUID):
     return userCourses
 
 
-@router.post('')
-async def create(request: CourseRequest):
+@ router.get('/collaborator/{userId}')
+async def get_by_collaborator(userId: UUID):
+    userCourses = []
+    user = session.get(Teacher, userId)
+    if user is None:
+        return JSONResponse(status_code=404, content="No user found")
+    for course in user.courses:
+        userCourses.append(
+            {'id': str(course.id)})
+    return userCourses
+
+
+@ router.post('')
+async def create(request: CourseCreate):
     new = Course(**request.dict(exclude_unset=True, exclude={"hashtags"}))
     for tag in request.hashtags:
         hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
@@ -72,6 +112,7 @@ async def create(request: CourseRequest):
             new.hashtags.append(Hashtag(tag=tag))
         elif hashtag not in new.hashtags:
             new.hashtags.append(hashtag)
+
     session.add(new)
     session.commit()
     return {'id': str(new.id)}
@@ -212,6 +253,8 @@ async def add_hashtags(courseId: UUID, tags: List[str]):
             course.hashtags.append(Hashtag(tag=tag))
         elif hashtag not in course.hashtags:
             course.hashtags.append(hashtag)
+
+    session.commit()
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtags added succesfully.')
 
 
@@ -245,7 +288,7 @@ async def get_by_hashtag(tag: str):
     return response
 
 
-@router.get('/{courseId}/owner')
+@ router.get('/{courseId}/owner')
 async def get_owner(courseId: UUID):
     course = session.get(Course, courseId)
     if course is None:
@@ -253,22 +296,24 @@ async def get_owner(courseId: UUID):
     return {"ownerId": course.owner}
 
 
-@router.put('/{courseId}/block')
+@ router.put('/{courseId}/block')
 async def set_block(courseId: UUID, block: bool = True):
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
     course.blocked = block
+    session.commit()
     if block is True:
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(courseId) + ' was blocked succesfully.')
     else:
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(courseId) + ' was unblocked succesfully.')
 
 
-@router.put('/{courseId}/status')
+@ router.put('/{courseId}/status')
 async def set_status(courseId: UUID, in_edition: bool):
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
     course.in_edition = in_edition
+    session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(courseId) + ' status was updated succesfully.')
