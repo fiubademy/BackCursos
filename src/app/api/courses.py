@@ -241,7 +241,7 @@ async def get_hashtags(courseId: UUID):
     return hashtags
 
 
-@ router.post('/{courseId}/add_hashtag/{tag}')
+@ router.post('/{courseId}/add_hashtags')
 async def add_hashtags(courseId: UUID, tags: List[str]):
     course = session.get(Course, courseId)
     if course is None:
