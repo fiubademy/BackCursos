@@ -23,7 +23,7 @@ class CourseBase(BaseModel):
         return latitude
 
     @validator('longitude')
-    def latitude_valid(cls, longitude):
+    def longitude_valid(cls, longitude):
         if longitude > 180 or longitude < -180:
             raise ValueError(
                 'No a valid longitude. It must be between 180 and -180')
