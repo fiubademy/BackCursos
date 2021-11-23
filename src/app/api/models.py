@@ -15,6 +15,20 @@ class CourseBase(BaseModel):
                 'valid subscription levels are 0 (Free), 1 (Standard), 2 (Premium)')
         return v
 
+    @validator('latitude')
+    def latitude_valid(cls, latitude):
+        if latitude > 90 or latitude < -90:
+            raise ValueError(
+                'No a valid latitude. It must be between -90 and 90')
+        return latitude
+
+    @validator('longitude')
+    def latitude_valid(cls, longitude):
+        if longitude > 180 or longitude < -180:
+            raise ValueError(
+                'No a valid longitude. It must be between 180 and -180')
+        return longitude
+
 
 class CourseCreate(CourseBase):
     name: str
