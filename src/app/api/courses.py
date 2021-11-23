@@ -24,7 +24,7 @@ def set_engine(engine_rcvd):
     return session
 
 
-@router.get('/{page_num}')
+@router.get('/all/{page_num}')
 async def get_courses(
     page_num: int,
     filter: CourseFilter = Depends()
