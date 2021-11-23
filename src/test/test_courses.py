@@ -19,7 +19,7 @@ async def get_by_id(courseId: str):
 
 
 async def get_all(courseName: str = ''):
-    return await courses.get_all(courseName)
+    return await courses.get_courses(1, courseName)
 
 
 async def get_by_student(userId: str):
@@ -88,7 +88,7 @@ def test_post_and_get_by_name():
     courseId = asyncio.run(post(request))['id']
     courses = asyncio.run(get_all(name))
 
-    assert courses[0]["id"] == courseId
+    assert courses["content"][0]["id"] == courseId
 
     asyncio.run(delete(courseId))
 
@@ -127,7 +127,7 @@ def test_put_course_correctly():
 
 def test_get_all_courses():
     try:
-        initialLen = len(asyncio.run(get_all()))
+        initialLen = len(asyncio.run(get_all())['content'])
     except TypeError:
         initialLen = 0
     ownerId = str(uuid.uuid4())
@@ -138,7 +138,7 @@ def test_get_all_courses():
 
     courseId3 = asyncio.run(post(request=CourseRequest(owner=ownerId, name='curso2')
                                  ))["id"]
-    newLen = len(asyncio.run(get_all()))
+    newLen = len(asyncio.run(get_all())['content'])
 
     assert newLen == initialLen + 3
 
