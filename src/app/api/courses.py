@@ -1,10 +1,10 @@
 from uuid import UUID
-from fastapi import status, APIRouter, File, UploadFile
-from typing import List, Optional
-from starlette.responses import JSONResponse, StreamingResponse
+from fastapi import status, APIRouter, Depends
+from typing import List
+from starlette.responses import JSONResponse
 from sqlalchemy.orm import sessionmaker
 
-from api.models import CourseRequest, CourseUpdate
+from api.models import CourseCreate, CourseUpdate, CourseFilter
 from db import Course, Student, Teacher, Hashtag, Content
 
 PER_PAGE = 5
@@ -27,26 +27,22 @@ def set_engine(engine_rcvd):
 @router.get('/{page_num}')
 async def get_courses(
     page_num: int,
-    name: Optional[str] = None,
-    owner: Optional[UUID] = None,
-    description: Optional[str] = None,
-    sub_level: Optional[int] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None
+    filter: CourseFilter = Depends()
 ):
     query = session.query(Course)
-    if name:
-        query = query.filter(Course.name.ilike(f'%{name}%'))
-    if owner:
-        query = query.filter(Course.owner == owner)
-    if description:
-        query = query.filter(Course.description.ilike(f'%{description}%'))
-    if sub_level:
-        query = query.filter(Course.sub_level == sub_level)
-    if latitude:
-        query = query.filter(Course.latitude == latitude)
-    if longitude:
-        query = query.filter(Course.longitude == longitude)
+    if filter.name:
+        query = query.filter(Course.name.ilike(f'%{filter.name}%'))
+    if filter.owner:
+        query = query.filter(Course.owner == filter.owner)
+    if filter.description:
+        query = query.filter(
+            Course.description.ilike(f'%{filter.description}%'))
+    if filter.sub_level:
+        query = query.filter(Course.sub_level == filter.sub_level)
+    if filter.latitude:
+        query = query.filter(Course.latitude == filter.latitude)
+    if filter.longitude:
+        query = query.filter(Course.longitude == filter.longitude)
     count = query.count()
     query = query.limit(PER_PAGE).offset((page_num-1)*PER_PAGE)
     if (count/PER_PAGE - int(count/PER_PAGE) == 0):
@@ -108,7 +104,7 @@ async def get_by_collaborator(userId: UUID):
 
 
 @ router.post('')
-async def create(request: CourseRequest):
+async def create(request: CourseCreate):
     new = Course(**request.dict(exclude_unset=True, exclude={"hashtags"}))
     for tag in request.hashtags:
         hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()

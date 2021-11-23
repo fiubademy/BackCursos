@@ -3,34 +3,45 @@ from uuid import UUID
 from typing import List, Optional
 
 
-class CourseRequest(BaseModel):
+class CourseBase(BaseModel):
+    sub_level: Optional[int]
+    latitude: Optional[float]
+    longitude: Optional[float]
+
+    @validator('sub_level')
+    def sub_level_valid(cls, v):
+        if v > 2 or v < 0:
+            raise ValueError(
+                'valid subscription levels are 0 (Free), 1 (Standard), 2 (Premium)')
+        return v
+
+
+class CourseCreate(CourseBase):
     name: str
     owner: UUID
     description: Optional[str] = ""
-    sub_level: Optional[int]
-    latitude: Optional[float]
-    longitude: Optional[float]
     hashtags: Optional[List] = []
 
-    @validator('sub_level')
-    def sub_level_valid(cls, v):
-        if v > 2 or v < 0:
-            raise ValueError(
-                'valid subscription levels are 0 (Free), 1 (Standard), 2 (Premium)')
-        return v
 
-
-class CourseUpdate(BaseModel):
+class CourseUpdate(CourseBase):
     name: Optional[str]
     owner: Optional[UUID]
     description: Optional[str]
-    sub_level: Optional[int]
-    latitude: Optional[float]
-    longitude: Optional[float]
 
-    @validator('sub_level')
-    def sub_level_valid(cls, v):
-        if v > 2 or v < 0:
-            raise ValueError(
-                'valid subscription levels are 0 (Free), 1 (Standard), 2 (Premium)')
-        return v
+
+class CourseFilter:
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        owner: Optional[UUID] = None,
+        description: Optional[str] = None,
+        sub_level: Optional[int] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None
+    ):
+        self.name = name
+        self.owner = owner
+        self.description = description
+        self.sub_level = sub_level
+        self.latitude = latitude
+        self.longitude = longitude
