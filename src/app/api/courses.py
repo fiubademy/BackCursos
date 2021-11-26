@@ -30,6 +30,8 @@ async def get_courses(
     filter: CourseFilter = Depends()
 ):
     query = session.query(Course)
+    if filter.id:
+        query = query, filter(Course.id == id)
     if filter.name:
         query = query.filter(Course.name.ilike(f'%{filter.name}%'))
     if filter.owner:
@@ -43,6 +45,16 @@ async def get_courses(
         query = query.filter(Course.latitude == filter.latitude)
     if filter.longitude:
         query = query.filter(Course.longitude == filter.longitude)
+    if filter.student:
+        query = session.query(Course).filter(
+            Course.students.any(user_id=filter.student))
+    if filter.collaborator:
+        query = session.query(Course).filter(
+            Course.teachers.any(user_id=filter.collaborator))
+    if filter.hashtag:
+        query = session.query(Course).filter(
+            Course.hashtags.any(tag=filter.hashtag))
+
     count = query.count()
     query = query.limit(PER_PAGE).offset((page_num-1)*PER_PAGE)
     if (count/PER_PAGE - int(count/PER_PAGE) == 0):
@@ -65,7 +77,7 @@ async def get_courses(
 async def get_by_id(id: UUID):
     course = session.get(Course, id)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(id) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(id) + ' not found.')
     return {'id': str(course.id),
             'name': course.name,
             'description': course.description,
@@ -75,29 +87,6 @@ async def get_by_id(id: UUID):
             'hashtags': [hashtag.tag for hashtag in course.hashtags],
             'time_created': course.time_created
             }
-
-
-@ router.get('/student/{userId}')
-async def get_by_student(userId: UUID):
-    user = session.get(Student, userId)
-    if user is None:
-        return JSONResponse(status_code=404, content="No courses found")
-    return [{'id': str(course.id)} for course in user.courses],
-
-
-@ router.get('/collaborator/{userId}')
-async def get_by_collaborator(userId: UUID):
-    user = session.get(Teacher, userId)
-    if user is None:
-        return JSONResponse(status_code=404, content="No courses found")
-    return [{'id': str(course.id)} for course in user.courses],
-
-
-@ router.get('/hashtag/{tag}')
-async def get_by_hashtag(tag: str):
-    courses = session.query(Course).filter(
-        Course.hashtags.any(tag=tag))
-    return [{'id': str(course.id)} for course in courses],
 
 
 @ router.post('')
@@ -119,7 +108,7 @@ async def create(request: CourseCreate):
 async def delete(id: UUID):
     course = session.get(Course, id)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(id) + ' not found and will not be deleted.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(id) + ' not found and will not be deleted.')
     session.delete(course)
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(id) + ' was deleted succesfully.')
@@ -129,7 +118,7 @@ async def delete(id: UUID):
 async def update(id: UUID, request: CourseUpdate):
     course = session.get(Course, id)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(id) + ' not found and will not be updated.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(id) + ' not found and will not be updated.')
 
     attributes = request.dict(exclude_unset=True, exclude_none=True)
     for att, value in attributes.items():
@@ -144,16 +133,15 @@ async def update(id: UUID, request: CourseUpdate):
 async def get_students(courseId: UUID):
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
     return [{'id': user.user_id} for user in course.students],
-
 
 
 @ router.post('/{courseId}/add_student/{userId}')
 async def add_student(courseId: UUID, userId: UUID):
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
     student = session.get(Student, userId)
     if student is None:
         course.students.append(Student(user_id=userId))
@@ -167,7 +155,7 @@ async def remove_student(courseId: UUID, userId: UUID):
     removed = False
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
 
     for student in course.students:
         if student.user_id == userId:
@@ -175,7 +163,7 @@ async def remove_student(courseId: UUID, userId: UUID):
             removed = True
             break
     if not removed:
-        return JSONResponse(status_code=404, content='No student found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='No student found.')
 
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Student ' + str(userId) + ' was removed succesfully.')
@@ -185,16 +173,15 @@ async def remove_student(courseId: UUID, userId: UUID):
 async def get_collaborators(courseId: UUID):
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
     return [{'id': user.user_id} for user in course.teachers],
-
 
 
 @ router.post('/{courseId}/add_collaborator/{userId}')
 async def add_collaborator(courseId: UUID, userId: UUID):
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
 
     teacher = session.get(Teacher, userId)
     if teacher is None:
@@ -209,7 +196,7 @@ async def remove_collaborator(courseId: UUID, userId: UUID):
     removed = False
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
 
     for teacher in course.teachers:
         if teacher.user_id == userId:
@@ -217,7 +204,7 @@ async def remove_collaborator(courseId: UUID, userId: UUID):
             removed = True
             break
     if not removed:
-        return JSONResponse(status_code=404, content='No collaborator found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='No collaborator found.')
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Collaborator ' + str(userId) + ' was removed succesfully.')
 
@@ -227,16 +214,15 @@ async def get_hashtags(courseId: UUID):
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(
-            status_code=404, content='Course ' + str(courseId) + ' not found.')
+            status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
     return [{'hashtag': hashtag.tag} for hashtag in course.hashtags],
-
 
 
 @ router.post('/{courseId}/add_hashtags')
 async def add_hashtags(courseId: UUID, tags: List[str]):
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
 
     for tag in tags:
         hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
@@ -254,7 +240,7 @@ async def remove_hashtags(courseId: UUID, tags: List[str]):
     response = ""
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
 
     for tag in tags:
         for hashtag in course.hashtags:
@@ -263,7 +249,7 @@ async def remove_hashtags(courseId: UUID, tags: List[str]):
                 response += f'\'{tag}\', '
                 break
     if response == "":
-        return JSONResponse(status_code=404, content='No hashtags found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='No hashtags found.')
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Hashtags ' + response + 'were removed succesfully.')
 
@@ -272,7 +258,7 @@ async def remove_hashtags(courseId: UUID, tags: List[str]):
 async def get_owner(courseId: UUID):
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
     return {"ownerId": course.owner}
 
 
@@ -280,7 +266,7 @@ async def get_owner(courseId: UUID):
 async def set_block(courseId: UUID, block: bool = True):
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
     course.blocked = block
     session.commit()
     if block is True:
@@ -293,7 +279,7 @@ async def set_block(courseId: UUID, block: bool = True):
 async def set_status(courseId: UUID, in_edition: bool):
     course = session.get(Course, courseId)
     if course is None:
-        return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
     course.in_edition = in_edition
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course ' + str(courseId) + ' status was updated succesfully.')
