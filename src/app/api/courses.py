@@ -147,6 +147,9 @@ async def add_student(courseId: UUID, userId: UUID):
         course.students.append(Student(user_id=userId))
     elif student not in course.students:
         course.students.append(student)
+    else:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='Student already added.')
+
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Student ' + str(userId) + ' added succesfully.')
 
 
@@ -188,6 +191,8 @@ async def add_collaborator(courseId: UUID, userId: UUID):
         course.teachers.append(Teacher(user_id=userId))
     elif teacher not in course.teachers:
         course.teachers.append(teacher)
+    else:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='Collaborator already added.')
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Collaborator ' + str(userId) + ' added succesfully.')
 
 
@@ -224,15 +229,20 @@ async def add_hashtags(courseId: UUID, tags: List[str]):
     if course is None:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
 
+    added = 0
     for tag in tags:
         hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
         if hashtag is None:
             course.hashtags.append(Hashtag(tag=tag))
+            added += 1
         elif hashtag not in course.hashtags:
             course.hashtags.append(hashtag)
+            added += 1
 
+    if added == 0:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='Tags were already added.')
     session.commit()
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Hashtags added succesfully.')
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=f'{added} hashtags added succesfully.')
 
 
 @ router.delete('/{courseId}/remove_hashtags')
@@ -252,14 +262,6 @@ async def remove_hashtags(courseId: UUID, tags: List[str]):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='No hashtags found.')
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Hashtags ' + response + 'were removed succesfully.')
-
-
-@ router.get('/{courseId}/owner')
-async def get_owner(courseId: UUID):
-    course = session.get(Course, courseId)
-    if course is None:
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Course ' + str(courseId) + ' not found.')
-    return {"ownerId": course.owner}
 
 
 @ router.put('/{courseId}/block')
