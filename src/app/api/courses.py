@@ -205,7 +205,7 @@ async def remove_hashtags(tags: List[str] = Query(..., min_length=1), course=Dep
     if response == "":
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='No hashtags found.')
     session.commit()
-    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=f'Hashtags {response} removed succesfully.')
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=f'Hashtag {response[:-2]} removed succesfully.')
 
 
 @ router.put('/{courseId}/block')
