@@ -51,7 +51,6 @@ async def get_courses(
         num_pages = int(count/PER_PAGE)+1
     return {'num_pages': num_pages, 'content': [{
         'id': str(course.id),
-        'ownerId': str(course.owner),
         'name': course.name,
         'description': course.description,
         'sub_level': course.sub_level,
@@ -68,7 +67,6 @@ async def get_by_id(id: UUID):
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(id) + ' not found.')
     return {'id': str(course.id),
-            'ownerId': str(course.owner),
             'name': course.name,
             'description': course.description,
             'sub_level': course.sub_level,
@@ -81,26 +79,25 @@ async def get_by_id(id: UUID):
 
 @ router.get('/student/{userId}')
 async def get_by_student(userId: UUID):
-    userCourses = []
     user = session.get(Student, userId)
     if user is None:
-        return JSONResponse(status_code=404, content="No user found")
-    for course in user.courses:
-        userCourses.append(
-            {'id': str(course.id)})
-    return userCourses
+        return JSONResponse(status_code=404, content="No courses found")
+    return [{'id': str(course.id)} for course in user.courses],
 
 
 @ router.get('/collaborator/{userId}')
 async def get_by_collaborator(userId: UUID):
-    userCourses = []
     user = session.get(Teacher, userId)
     if user is None:
-        return JSONResponse(status_code=404, content="No user found")
-    for course in user.courses:
-        userCourses.append(
-            {'id': str(course.id)})
-    return userCourses
+        return JSONResponse(status_code=404, content="No courses found")
+    return [{'id': str(course.id)} for course in user.courses],
+
+
+@ router.get('/hashtag/{tag}')
+async def get_by_hashtag(tag: str):
+    courses = session.query(Course).filter(
+        Course.hashtags.any(tag=tag))
+    return [{'id': str(course.id)} for course in courses],
 
 
 @ router.post('')
@@ -145,13 +142,11 @@ async def update(id: UUID, request: CourseUpdate):
 
 @ router.get('/{courseId}/students')
 async def get_students(courseId: UUID):
-    students = []
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
-    for user in course.students:
-        students.append({'id': user.user_id})
-    return students
+    return [{'id': user.user_id} for user in course.students],
+
 
 
 @ router.post('/{courseId}/add_student/{userId}')
@@ -188,13 +183,11 @@ async def remove_student(courseId: UUID, userId: UUID):
 
 @ router.get('/{courseId}/collaborators')
 async def get_collaborators(courseId: UUID):
-    collaborators = []
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(status_code=404, content='Course ' + str(courseId) + ' not found.')
-    for user in course.teachers:
-        collaborators.append({'id': user.user_id})
-    return collaborators
+    return [{'id': user.user_id} for user in course.teachers],
+
 
 
 @ router.post('/{courseId}/add_collaborator/{userId}')
@@ -231,14 +224,12 @@ async def remove_collaborator(courseId: UUID, userId: UUID):
 
 @ router.get('/{courseId}/hashtags')
 async def get_hashtags(courseId: UUID):
-    hashtags = []
     course = session.get(Course, courseId)
     if course is None:
         return JSONResponse(
             status_code=404, content='Course ' + str(courseId) + ' not found.')
-    for hashtag in course.hashtags:
-        hashtags.append({'hashtag': hashtag.tag})
-    return hashtags
+    return [{'hashtag': hashtag.tag} for hashtag in course.hashtags],
+
 
 
 @ router.post('/{courseId}/add_hashtags')
@@ -275,17 +266,6 @@ async def remove_hashtags(courseId: UUID, tags: List[str]):
         return JSONResponse(status_code=404, content='No hashtags found.')
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Hashtags ' + response + 'were removed succesfully.')
-
-
-@ router.get('/hashtag/{tag}')
-async def get_by_hashtag(tag: str):
-    response = []
-    courses = session.query(Course).filter(
-        Course.hashtags.any(tag=tag))
-    for course in courses:
-        response.append(
-            {'id': str(course.id)})
-    return response
 
 
 @ router.get('/{courseId}/owner')
