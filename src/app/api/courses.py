@@ -39,7 +39,7 @@ async def get_courses(
 ):
     query = session.query(Course)
     if filter.id:
-        query = query, filter(Course.id == id)
+        query = query.filter(Course.id == filter.id)
     if filter.name:
         query = query.filter(Course.name.ilike(f'%{filter.name}%'))
     if filter.owner:
