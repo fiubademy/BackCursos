@@ -1,10 +1,11 @@
 from uuid import UUID
-from fastapi import status, APIRouter, Depends, HTTPException, Query
+from fastapi import status, APIRouter, Depends, HTTPException
 from typing import List
+from fastapi.param_functions import Body
 from starlette.responses import JSONResponse
 from sqlalchemy.orm import sessionmaker
 
-from api.models import CourseCreate, CourseUpdate, CourseFilter
+from api.models import CourseCreate, CourseUpdate, CourseFilter, Hashtags
 from db import Course, Student, Teacher, Hashtag, Content
 
 PER_PAGE = 5
@@ -59,9 +60,10 @@ async def get_courses(
     if filter.collaborator:
         query = session.query(Course).filter(
             Course.teachers.any(user_id=filter.collaborator))
-    if filter.hashtag:
-        query = session.query(Course).filter(
-            Course.hashtags.any(tag=filter.hashtag))
+    if filter.hashtags:
+        for tag in filter.hashtags:
+            query = session.query(Course).filter(
+                Course.hashtags.any(tag=tag))
 
     count = query.count()
     query = query.limit(PER_PAGE).offset((page_num-1)*PER_PAGE)
@@ -147,9 +149,9 @@ async def add_collaborator(userId: UUID, course=Depends(check_course)):
 
 
 @ router.post('/{courseId}/add_hashtags')
-async def add_hashtags(tags: List[str] = Query(..., min_length=1), course=Depends(check_course)):
+async def add_hashtags(tags: Hashtags, course=Depends(check_course)):
     response = ""
-    for tag in tags:
+    for tag in tags.tags:
         hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
         if hashtag is None:
             course.hashtags.append(Hashtag(tag=tag))
@@ -199,9 +201,9 @@ async def remove_collaborator(userId: UUID, course=Depends(check_course)):
 
 
 @ router.delete('/{courseId}/remove_hashtags')
-async def remove_hashtags(tags: List[str] = Query(..., min_length=1), course=Depends(check_course)):
+async def remove_hashtags(tags: Hashtags, course=Depends(check_course)):
     response = ""
-    for tag in tags:
+    for tag in tags.tags:
         for hashtag in course.hashtags:
             if hashtag.tag == tag:
                 course.hashtags.remove(hashtag)

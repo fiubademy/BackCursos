@@ -1,6 +1,7 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, Field
 from uuid import UUID
 from typing import List, Optional
+from fastapi import Query
 
 
 class CourseBase(BaseModel):
@@ -30,6 +31,10 @@ class CourseBase(BaseModel):
         return longitude
 
 
+class Hashtags(BaseModel):
+    tags: List[str] = Field(..., min_len=1)
+
+
 class CourseCreate(CourseBase):
     name: str
     owner: UUID
@@ -55,7 +60,7 @@ class CourseFilter:
         longitude: Optional[float] = None,
         student: Optional[UUID] = None,
         collaborator: Optional[UUID] = None,
-        hashtag: Optional[str] = None
+        hashtags: Optional[List[str]] = Query(None)
     ):
         self.id = id
         self.name = name
@@ -66,4 +71,4 @@ class CourseFilter:
         self.longitude = longitude
         self.student = student
         self.collaborator = collaborator
-        self.hashtag = hashtag
+        self.hashtags = hashtags
