@@ -92,6 +92,11 @@ async def get_students(course=Depends(check_course)):
 async def get_collaborators(course=Depends(check_course)):
     return [user.user_id for user in course.teachers]
 
+@ router.get('/{courseId}/owner')
+async def get_owner(course=Depends(check_course)):
+    return {"ownerId": course.owner}
+
+
 
 @ router.patch('/{courseId}')
 async def update(request: CourseUpdate, course=Depends(check_course)):
