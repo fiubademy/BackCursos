@@ -64,9 +64,11 @@ async def get_courses(
         for tag in filter.hashtags:
             query = query.filter(
                 Course.hashtags.any(tag=tag))
+    if filter.minRating:
+        query = query.filter(Course.rating >= filter.minRating)
 
-    query = query.limit(COURSES_PER_PAGE).offset((page_num-1)*COURSES_PER_PAGE)
     num_pages = math.ceil(query.count()/COURSES_PER_PAGE)
+    query = query.limit(COURSES_PER_PAGE).offset((page_num-1)*COURSES_PER_PAGE)
     return {'num_pages': num_pages, 'content': [{
         'id': str(course.id),
         'name': course.name,
