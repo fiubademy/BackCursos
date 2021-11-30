@@ -8,6 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relation, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import null
 from sqlalchemy.sql.sqltypes import Boolean, DateTime, Float, LargeBinary, String, Integer
 import uuid
 
@@ -55,6 +56,7 @@ class Course(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     sub_level = Column(Integer, nullable=True)
+    rating = Column(Float, nullable=True)
 
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")

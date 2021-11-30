@@ -9,7 +9,7 @@ from api.models import CourseCreate, CourseUpdate, CourseFilter, Hashtags, Revie
 from db import Course, Student, Teacher, Hashtag, Content, Review
 
 COURSES_PER_PAGE = 5
-REVIEWS_PER_PAGE = 10
+REVIEWS_PER_PAGE = 5
 
 router = APIRouter()
 
@@ -31,13 +31,6 @@ def check_course(courseId: UUID):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail='Course not found.')
     return course
-
-
-def calculate_rating(reviews):
-    if len(reviews) == 0:
-        return None
-    else:
-        return sum([r.rating for r in reviews])/len(reviews)
 
 
 @router.get('/all/{page_num}')
@@ -87,7 +80,7 @@ async def get_courses(
         'blocked': course.blocked,
         'in_edition': course.in_edition,
         'ratingCount': len(course.reviews),
-        'ratingAvg': calculate_rating(course.reviews)
+        'ratingAvg': course.rating
     } for course in query]}
 
 
@@ -118,8 +111,8 @@ async def get_review(userId: UUID, course=Depends(check_course)):
 
 @ router.get('/{courseId}/all_reviews/{pagenum}')
 async def get_all_reviews(pagenum: int, course=Depends(check_course)):
-    reviews = course.reviews[COURSES_PER_PAGE *
-                             (pagenum-1):COURSES_PER_PAGE*(pagenum)]
+    reviews = course.reviews[REVIEWS_PER_PAGE *
+                             (pagenum-1):REVIEWS_PER_PAGE*(pagenum)]
     num_pages = math.ceil(len(course.reviews)/REVIEWS_PER_PAGE)
     return {'num_pages': num_pages, 'content': [{
         'userId': review.user_id,
@@ -266,6 +259,9 @@ async def add_review(new: ReviewCreate, course=Depends(check_course)):
             review for review in course.reviews if review.user_id == new.user_id).id
     except StopIteration:
         pass
+
+    course.rating = (sum([r.rating for r in course.reviews]
+                         ) + new.rating)/(len(course.reviews) + 1)
     session.merge(new)
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Review added succesfully.')
