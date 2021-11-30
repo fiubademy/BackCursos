@@ -78,6 +78,7 @@ async def get_courses(
         'id': str(course.id),
         'name': course.name,
         'description': course.description,
+        'ownerId': course.owner,
         'sub_level': course.sub_level,
         'latitude': course.latitude,
         'longitude': course.longitude,
@@ -98,11 +99,6 @@ async def get_students(course=Depends(check_course)):
 @ router.get('/{courseId}/collaborators')
 async def get_collaborators(course=Depends(check_course)):
     return [user.user_id for user in course.teachers]
-
-
-@ router.get('/{courseId}/owner')
-async def get_owner(course=Depends(check_course)):
-    return {"ownerId": course.owner}
 
 
 @ router.get('/{courseId}/review/{userId}')
