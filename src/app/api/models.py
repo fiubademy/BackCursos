@@ -5,30 +5,9 @@ from fastapi import Query
 
 
 class CourseBase(BaseModel):
-    sub_level: Optional[int]
-    latitude: Optional[float]
-    longitude: Optional[float]
-
-    @validator('sub_level')
-    def sub_level_valid(cls, v):
-        if v > 2 or v < 0:
-            raise ValueError(
-                'valid subscription levels are 0 (Free), 1 (Standard), 2 (Premium)')
-        return v
-
-    @validator('latitude')
-    def latitude_valid(cls, latitude):
-        if latitude > 90 or latitude < -90:
-            raise ValueError(
-                'No a valid latitude. It must be between -90 and 90')
-        return latitude
-
-    @validator('longitude')
-    def longitude_valid(cls, longitude):
-        if longitude > 180 or longitude < -180:
-            raise ValueError(
-                'No a valid longitude. It must be between 180 and -180')
-        return longitude
+    sub_level: Optional[int] = Field(None, ge=0, le=2)
+    latitude: Optional[float] = Field(None, ge=-180, le=180)
+    longitude: Optional[float] = Field(None, ge=-90, le=90)
 
 
 class Hashtags(BaseModel):
@@ -60,7 +39,7 @@ class CourseFilter:
         longitude: Optional[float] = None,
         student: Optional[UUID] = None,
         collaborator: Optional[UUID] = None,
-        hashtags: Optional[List[str]] = Query(None)
+        hashtags: Optional[List[str]] = Query(None),
     ):
         self.id = id
         self.name = name
@@ -72,3 +51,9 @@ class CourseFilter:
         self.student = student
         self.collaborator = collaborator
         self.hashtags = hashtags
+
+
+class ReviewCreate(BaseModel):
+    user_id: UUID
+    description: Optional[str] = Field(None, max_length=500)
+    rating: int = Field(..., ge=1, le=5)

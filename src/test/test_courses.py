@@ -2,43 +2,56 @@ import asyncio
 import uuid
 from fastapi import status
 from app.api import courses
-from app.api.models import CourseCreate, CourseUpdate, CourseFilter
+from app.api.models import CourseCreate, CourseUpdate, CourseFilter, Hashtags, ReviewCreate
 
 
 async def post(request: CourseCreate):
     return await courses.create(request)
 
 
-async def delete(courseId: str):
+async def delete(courseId):
     return await courses.delete(courses.check_course(courseId))
 
 
-async def get(filter: CourseFilter):
+async def get(filter: CourseFilter, hashtags=[]):
+    filter.hashtags = hashtags
     return await courses.get_courses(page_num=1, filter=filter)
 
 
-async def update(courseId: str, request: CourseUpdate):
+async def update(courseId, request: CourseUpdate):
     return await courses.update(request, courses.check_course(courseId))
 
 
-async def get_students(courseId: str):
+async def get_students(courseId):
     return await courses.get_students(courses.check_course(courseId))
 
 
-async def add_student(courseId: str, userId: str):
+async def add_student(courseId, userId):
     return await courses.add_student(userId, courses.check_course(courseId))
 
 
-async def get_collaborators(courseId: str):
+async def get_collaborators(courseId):
     return await courses.get_collaborators(courses.check_course(courseId))
 
 
-async def add_collaborator(courseId: str, userId: str):
+async def add_collaborator(courseId, userId):
     return await courses.add_collaborator(userId, courses.check_course(courseId))
 
 
-async def add_hashtags(courseId: str, tag: str):
-    return await courses.add_hashtags(tag, courses.check_course(courseId))
+async def add_hashtags(courseId, tags):
+    return await courses.add_hashtags(Hashtags(tags=tags), courses.check_course(courseId))
+
+
+async def add_review(request: ReviewCreate, courseId):
+    return await courses.add_review(request, courses.check_course(courseId))
+
+
+async def get_review(userId, courseId):
+    return await courses.get_review(userId, courses.check_course(courseId))
+
+
+async def get_all_reviews(courseId):
+    return await courses.get_all_reviews(1, courses.check_course(courseId))
 
 
 def test_post_and_get_by_id():
@@ -198,7 +211,7 @@ def test_get_by_hashtag():
         post(CourseCreate(owner=ownerId, name=name)))["courseId"]
     asyncio.run(add_hashtags(courseId, [tag]))
 
-    courses = asyncio.run(get(CourseFilter(hashtag=tag)))['content'][0]
+    courses = asyncio.run(get(CourseFilter(), hashtags=[tag]))['content'][0]
 
     assert courseId == courses['id']
 
@@ -218,7 +231,7 @@ def test_get_by_hashtag_two_courses():
         post(CourseCreate(owner=ownerId, name=name2)))["courseId"]
     asyncio.run(add_hashtags(courseId2, [tag]))
 
-    courses = asyncio.run(get(CourseFilter(hashtag=tag)))
+    courses = asyncio.run(get(CourseFilter(), hashtags=[tag]))
 
     foundCourse1 = False
     foundCourse2 = False
@@ -232,3 +245,53 @@ def test_get_by_hashtag_two_courses():
 
     asyncio.run(delete(courseId1))
     asyncio.run(delete(courseId2))
+
+
+def test_add_and_get_review():
+    userId = uuid.uuid4()
+    courseId = asyncio.run(post(request=CourseCreate(
+        owner=userId, name='curso1')))["courseId"]
+
+    asyncio.run(add_review(ReviewCreate(
+        description="", user_id=userId, rating=3), courseId))
+    review = asyncio.run(get_review(userId=userId, courseId=courseId))
+
+    assert review == {'rating': 3, 'description': ""}
+
+    asyncio.run(delete(courseId))
+
+
+def test_add_and_update_review():
+    userId = uuid.uuid4()
+    courseId = asyncio.run(post(request=CourseCreate(
+        owner=userId, name='curso1')))["courseId"]
+
+    asyncio.run(add_review(ReviewCreate(
+        description="", user_id=userId, rating=3), courseId))
+    asyncio.run(add_review(ReviewCreate(user_id=userId,
+                rating=1, description='test'), courseId))
+    review = asyncio.run(get_review(userId, courseId))
+
+    assert review == {'rating': 1, 'description': 'test'}
+
+    asyncio.run(delete(courseId))
+
+
+def test_add_and_get_all_reviews():
+    userId1 = uuid.uuid4()
+    userId2 = uuid.uuid4()
+    courseId = asyncio.run(post(request=CourseCreate(
+        owner=userId1, name='curso1')))["courseId"]
+
+    asyncio.run(add_review(ReviewCreate(
+        description="", user_id=userId1, rating=3), courseId))
+
+    asyncio.run(add_review(ReviewCreate(
+        description="", user_id=userId2, rating=1), courseId))
+    reviews = asyncio.run(get_all_reviews(courseId))['content']
+
+    assert {'userId': userId1, 'rating': 3,
+            'description': ""} in reviews
+    assert {'userId': userId2, 'rating': 1,
+            'description': ""} in reviews
+    asyncio.run(delete(courseId))

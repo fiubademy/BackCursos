@@ -58,6 +58,8 @@ class Course(Base):
 
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
+    reviews = relationship('Review', back_populates="course",
+                           cascade="all, delete, delete-orphan")
     students = relationship('Student',
                             secondary=course_students,
                             back_populates='courses')
@@ -101,3 +103,13 @@ class Content(Base):  # one to many relationship
     content = Column(String, nullable=False)
     course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     course = relationship("Course", back_populates="content")
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+    id = Column(Integer, primary_key=True)
+    rating = Column(Integer, nullable=False)
+    description = Column(String(500), nullable=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False)
+    course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
+    course = relationship("Course", back_populates="reviews")
