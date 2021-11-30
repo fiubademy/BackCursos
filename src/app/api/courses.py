@@ -101,6 +101,11 @@ async def get_collaborators(course=Depends(check_course)):
     return [user.user_id for user in course.teachers]
 
 
+@ router.get('/{courseId}/owner')
+async def get_owner(course=Depends(check_course)):
+    return {"ownerId": course.owner}
+
+
 @ router.get('/{courseId}/review/{userId}')
 async def get_review(userId: UUID, course=Depends(check_course)):
     try:
