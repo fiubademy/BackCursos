@@ -40,6 +40,7 @@ class CourseFilter:
         student: Optional[UUID] = None,
         collaborator: Optional[UUID] = None,
         hashtags: Optional[List[str]] = Query(None),
+        minRating: Optional[int] = None
     ):
         self.id = id
         self.name = name
@@ -51,6 +52,7 @@ class CourseFilter:
         self.student = student
         self.collaborator = collaborator
         self.hashtags = hashtags
+        self.minRating = minRating
 
 
 class ReviewCreate(BaseModel):
