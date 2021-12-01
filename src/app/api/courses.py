@@ -5,7 +5,7 @@ from fastapi.param_functions import Path, Optional
 from starlette.responses import JSONResponse
 from sqlalchemy.orm import sessionmaker
 
-from api.models import CourseCreate, CourseUpdate, CourseFilter, Hashtags, ReviewCreate
+from api.models import CourseCreate, CourseUpdate, CourseFilter, Hashtags, ReviewCreate, ContentCreate
 from db import Course, Student, Teacher, Hashtag, Content, Review
 
 COURSES_PER_PAGE = 5
@@ -66,6 +66,8 @@ async def get_courses(
                 Course.hashtags.any(tag=tag))
     if filter.minRating:
         query = query.filter(Course.rating >= filter.minRating)
+    if filter.category:
+        query = query.filter(Course.category == filter.category)
 
     num_pages = math.ceil(query.count()/COURSES_PER_PAGE)
     query = query.limit(COURSES_PER_PAGE).offset((page_num-1)*COURSES_PER_PAGE)
@@ -75,6 +77,7 @@ async def get_courses(
         'description': course.description,
         'ownerId': course.owner,
         'sub_level': course.sub_level,
+        'category': course.category,
         'latitude': course.latitude,
         'longitude': course.longitude,
         'hashtags': [hashtag.tag for hashtag in course.hashtags],
@@ -121,6 +124,11 @@ async def get_all_reviews(pagenum: int = Path(..., gt=0), course=Depends(check_c
         'rating': review.rating,
         'description': review.description
     } for review in reviews]}
+
+
+@ router.get('/{courseId}/get_content_list')
+async def get_content_list(course=Depends(check_course)):
+    return [{'id': content.id, 'name': content.name, 'link': content.link} for content in course.content]
 
 
 @ router.patch('/{courseId}')
@@ -188,6 +196,17 @@ async def add_hashtags(tags: Hashtags, course=Depends(check_course)):
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=f'Hashtag {response[:-2]} added succesfully.')
 
 
+@ router.post('/{courseId}/add_content')
+async def add_content(new: ContentCreate, course=Depends(check_course)):
+    for content in course.content:
+        if content.link == new.link or content.name == new.name:
+            return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='Content already exists.')
+
+    course.content.append(Content(**new.dict()))
+    session.commit()
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Content added succesfully.')
+
+
 @ router.delete('/{courseId}', summary='Delete course')
 async def delete(course=Depends(check_course)):
     session.delete(course)
@@ -236,6 +255,17 @@ async def remove_hashtags(tags: Hashtags, course=Depends(check_course)):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='No hashtags found.')
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=f'Hashtag {response[:-2]} removed succesfully.')
+
+
+@ router.delete('/remove_content/{contentId}')
+async def remove_content(contentId: str):
+    content = session.get(Content, contentId)
+    if content is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Content not found.')
+    session.delete(content)
+    session.commit()
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Content deleted succesfully.')
 
 
 @ router.put('/{courseId}/block')

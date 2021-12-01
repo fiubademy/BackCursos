@@ -8,6 +8,7 @@ class CourseBase(BaseModel):
     sub_level: Optional[int] = Field(None, ge=0, le=2)
     latitude: Optional[float] = Field(None, ge=-180, le=180)
     longitude: Optional[float] = Field(None, ge=-90, le=90)
+    category: Optional[str]
 
 
 class Hashtags(BaseModel):
@@ -40,7 +41,8 @@ class CourseFilter:
         student: Optional[UUID] = None,
         collaborator: Optional[UUID] = None,
         hashtags: Optional[List[str]] = Query(None),
-        minRating: Optional[int] = None
+        minRating: Optional[int] = None,
+        category: Optional[str] = None
     ):
         self.id = id
         self.name = name
@@ -53,6 +55,12 @@ class CourseFilter:
         self.collaborator = collaborator
         self.hashtags = hashtags
         self.minRating = minRating
+        self.category = category
+
+
+class ContentCreate(BaseModel):
+    name: str
+    link: str
 
 
 class ReviewCreate(BaseModel):

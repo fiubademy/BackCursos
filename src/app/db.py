@@ -57,6 +57,7 @@ class Course(Base):
     longitude = Column(Float, nullable=True)
     sub_level = Column(Integer, nullable=True)
     rating = Column(Float, nullable=True)
+    category = Column(String)
 
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
@@ -102,7 +103,8 @@ class Teacher(Base):  # many to many relationship
 class Content(Base):  # one to many relationship
     __tablename__ = "content"
     id = Column(Integer, primary_key=True)
-    content = Column(String, nullable=False)
+    link = Column(String, nullable=False)
+    name = Column(String, nullable=False)
     course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     course = relationship("Course", back_populates="content")
 
