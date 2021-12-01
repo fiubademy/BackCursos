@@ -66,6 +66,8 @@ async def get_courses(
                 Course.hashtags.any(tag=tag))
     if filter.minRating:
         query = query.filter(Course.rating >= filter.minRating)
+    if filter.category:
+        query = query.filter(Course.category == filter.category)
 
     num_pages = math.ceil(query.count()/COURSES_PER_PAGE)
     query = query.limit(COURSES_PER_PAGE).offset((page_num-1)*COURSES_PER_PAGE)
@@ -75,6 +77,7 @@ async def get_courses(
         'description': course.description,
         'ownerId': course.owner,
         'sub_level': course.sub_level,
+        'category': course.category,
         'latitude': course.latitude,
         'longitude': course.longitude,
         'hashtags': [hashtag.tag for hashtag in course.hashtags],
