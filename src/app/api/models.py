@@ -55,6 +55,11 @@ class CourseFilter:
         self.minRating = minRating
 
 
+class ContentCreate(BaseModel):
+    name: str
+    link: str
+
+
 class ReviewCreate(BaseModel):
     user_id: UUID
     description: Optional[str] = Field(None, max_length=500)
