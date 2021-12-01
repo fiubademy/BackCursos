@@ -35,7 +35,7 @@ def check_course(courseId: UUID):
 
 @router.get('/all/{page_num}')
 async def get_courses(
-    page_num: int,
+    page_num: int = Path(..., gt=0),
     filter: CourseFilter = Depends()
 ):
     query = session.query(Course)
@@ -112,7 +112,7 @@ async def get_review(userId: UUID, course=Depends(check_course)):
 
 
 @ router.get('/{courseId}/all_reviews/{pagenum}')
-async def get_all_reviews(pagenum: int, course=Depends(check_course)):
+async def get_all_reviews(pagenum: int = Path(..., gt=0), course=Depends(check_course)):
     reviews = course.reviews[REVIEWS_PER_PAGE *
                              (pagenum-1):REVIEWS_PER_PAGE*(pagenum)]
     num_pages = math.ceil(len(course.reviews)/REVIEWS_PER_PAGE)
