@@ -1,4 +1,4 @@
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, Field
 from uuid import UUID
 from typing import List, Optional
 from fastapi import Query

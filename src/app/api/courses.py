@@ -39,34 +39,34 @@ async def get_courses(
     filter: CourseFilter = Depends()
 ):
     query = session.query(Course)
-    if filter.id:
+    if filter.id is not None:
         query = query.filter(Course.id == filter.id)
-    if filter.name:
+    if filter.name is not None:
         query = query.filter(Course.name.ilike(f'%{filter.name}%'))
-    if filter.owner:
+    if filter.owner is not None:
         query = query.filter(Course.owner == filter.owner)
-    if filter.description:
+    if filter.description is not None:
         query = query.filter(
             Course.description.ilike(f'%{filter.description}%'))
-    if filter.sub_level:
+    if filter.sub_level is not None:
         query = query.filter(Course.sub_level == filter.sub_level)
-    if filter.latitude:
+    if filter.latitude is not None:
         query = query.filter(Course.latitude == filter.latitude)
-    if filter.longitude:
+    if filter.longitude is not None:
         query = query.filter(Course.longitude == filter.longitude)
-    if filter.student:
+    if filter.student is not None:
         query = query.filter(
             Course.students.any(user_id=filter.student))
-    if filter.collaborator:
+    if filter.collaborator is not None:
         query = query.filter(
             Course.teachers.any(user_id=filter.collaborator))
-    if filter.hashtags:
+    if filter.hashtags is not None:
         for tag in filter.hashtags:
             query = query.filter(
                 Course.hashtags.any(tag=tag))
-    if filter.minRating:
+    if filter.minRating is not None:
         query = query.filter(Course.rating >= filter.minRating)
-    if filter.category:
+    if filter.category is not None:
         query = query.filter(Course.category == filter.category)
 
     num_pages = math.ceil(query.count()/COURSES_PER_PAGE)
