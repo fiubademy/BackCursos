@@ -43,6 +43,13 @@ course_teachers = Table('course_teachers', Base.metadata,
                             'teachers.user_id'), primary_key=True)
                         )
 
+course_favs = Table('course_favs', Base.metadata,
+                        Column('course_id', ForeignKey(
+                            'courses.id'), primary_key=True),
+                        Column('user_id', ForeignKey(
+                            'users.user_id'), primary_key=True)
+                        )
+
 
 class Course(Base):
     __tablename__ = "courses"
@@ -72,6 +79,9 @@ class Course(Base):
     teachers = relationship('Teacher',
                             secondary=course_teachers,
                             back_populates='courses')
+    faved_by = relationship('User',
+                            secondary=course_favs,
+                            back_populates='favs')
 
 
 class Student(Base):  # many to many relationship
@@ -80,7 +90,6 @@ class Student(Base):  # many to many relationship
     courses = relationship('Course',
                            secondary=course_students,
                            back_populates='students')
-    # completed = NULL, o una nota si el curso fue terminado
 
 
 class Hashtag(Base):  # many to many relationship
@@ -117,3 +126,12 @@ class Review(Base):
     user_id = Column(UUID(as_uuid=True), nullable=False)
     course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'))
     course = relationship("Course", back_populates="reviews")
+
+
+class User(Base):  # many to many relationship
+    __tablename__ = "users"
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
+    favs = relationship('Course',
+                           secondary=course_favs,
+                           back_populates='faved_by')
+

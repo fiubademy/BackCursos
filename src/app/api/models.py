@@ -42,7 +42,8 @@ class CourseFilter:
         collaborator: Optional[UUID] = None,
         hashtags: Optional[List[str]] = Query(None),
         minRating: Optional[int] = None,
-        category: Optional[str] = None
+        category: Optional[str] = None,
+        faved_by: Optional[UUID] = None,
     ):
         self.id = id
         self.name = name
@@ -56,6 +57,7 @@ class CourseFilter:
         self.hashtags = hashtags
         self.minRating = minRating
         self.category = category
+        self.faved_by = faved_by
 
 
 class ContentCreate(BaseModel):
