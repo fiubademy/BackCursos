@@ -6,7 +6,7 @@ from starlette.responses import JSONResponse
 from sqlalchemy.orm import sessionmaker
 
 from api.models import CourseCreate, CourseUpdate, CourseFilter, Hashtags, ReviewCreate, ContentCreate
-from db import Course, Student, Teacher, Hashtag, Content, Review
+from db import Course, Student, Teacher, Hashtag, Content, Review, User
 
 COURSES_PER_PAGE = 5
 REVIEWS_PER_PAGE = 5
@@ -68,6 +68,8 @@ async def get_courses(
         query = query.filter(Course.rating >= filter.minRating)
     if filter.category is not None:
         query = query.filter(Course.category == filter.category)
+    if filter.faved_by is not None:
+        query = query.filter(Course.faved_by.any(user_id=filter.faved_by))
 
     num_pages = math.ceil(query.count()/COURSES_PER_PAGE)
     query = query.limit(COURSES_PER_PAGE).offset((page_num-1)*COURSES_PER_PAGE)
@@ -297,3 +299,20 @@ async def add_review(new: ReviewCreate, course=Depends(check_course)):
     session.merge(new)
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Review added succesfully.')
+
+
+@ router.put('/new_fav/{userId}/{courseId}/{fav}')
+async def fav_course(fav: bool, userId: UUID, course=Depends(check_course)):
+    user = session.get(User, userId)
+    if fav is True:
+        if user is None:
+            course.faved_by.append(User(user_id=userId))
+        elif user not in course.faved_by:
+            course.faved_by.append(user)
+    else:
+        for user in course.faved_by:
+            if user.user_id == userId:
+                course.faved_by.remove(user)
+                break
+    session.commit()
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Fav updated succesfully.')
