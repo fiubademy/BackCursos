@@ -135,9 +135,17 @@ async def get_content_list(course=Depends(check_course)):
 
 @ router.patch('/{courseId}')
 async def update(request: CourseUpdate, course=Depends(check_course)):
-    attributes = request.dict(exclude_unset=True, exclude_none=True)
+    attributes = request.dict(exclude_unset=True, exclude_none=True, exclude={'hashtags'})
     for att, value in attributes.items():
         setattr(course, att, value)
+    if request.hashtags is not None:
+        course.hashtags[:] = []
+        for tag in request.hashtags:
+            hashtag = session.query(Hashtag).filter(Hashtag.tag == tag).first()
+            if hashtag is None:
+                course.hashtags.append(Hashtag(tag=tag))
+            else:
+                course.hashtags.append(hashtag)
     session.merge(course)
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course updated succesfully.')

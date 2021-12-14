@@ -26,6 +26,7 @@ class CourseUpdate(CourseBase):
     name: Optional[str]
     owner: Optional[UUID]
     description: Optional[str]
+    hashtags: Optional[List[str]] = None
 
 
 class CourseFilter:
