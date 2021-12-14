@@ -70,6 +70,10 @@ async def get_courses(
         query = query.filter(Course.category == filter.category)
     if filter.faved_by is not None:
         query = query.filter(Course.faved_by.any(user_id=filter.faved_by))
+    if filter.inEdition is not None:
+        query = query.filter(Course.in_edition == filter.inEdition)
+    if filter.blocked is not None:
+        query = query.filter(Course.blocked == filter.blocked)
 
     num_pages = math.ceil(query.count()/COURSES_PER_PAGE)
     query = query.limit(COURSES_PER_PAGE).offset((page_num-1)*COURSES_PER_PAGE)

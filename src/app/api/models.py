@@ -45,6 +45,8 @@ class CourseFilter:
         minRating: Optional[int] = None,
         category: Optional[str] = None,
         faved_by: Optional[UUID] = None,
+        inEdition: Optional[bool] = None,
+        blocked: Optional[bool] = None,
     ):
         self.id = id
         self.name = name
@@ -59,6 +61,8 @@ class CourseFilter:
         self.minRating = minRating
         self.category = category
         self.faved_by = faved_by
+        self.inEdition = inEdition
+        self.blocked = blocked
 
 
 class ContentCreate(BaseModel):
