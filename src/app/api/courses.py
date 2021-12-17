@@ -55,7 +55,8 @@ async def get_courses(
     if filter.longitude is not None:
         query = query.filter(Course.longitude == filter.longitude)
     if filter.student is not None:
-        query = query.join(Student).filter(Student.user_id == filter.student)
+        query = query.filter(
+            Course.students.any(user_id=filter.student))
     if filter.collaborator is not None:
         query = query.filter(
             Course.teachers.any(user_id=filter.collaborator))
