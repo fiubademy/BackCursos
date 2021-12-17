@@ -55,8 +55,7 @@ async def get_courses(
     if filter.longitude is not None:
         query = query.filter(Course.longitude == filter.longitude)
     if filter.student is not None:
-        query = query.filter(
-            Course.students.any(user_id=filter.student))
+        query = query.join(Student).filter(Student.user_id == filter.student)
     if filter.collaborator is not None:
         query = query.filter(
             Course.teachers.any(user_id=filter.collaborator))
@@ -178,6 +177,7 @@ async def add_student(userId: UUID, course=Depends(check_course)):
         course.students.append(student)
     else:
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='Student already existed.')
+    session.commit()
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Student added succesfully.')
 
 
@@ -190,6 +190,7 @@ async def add_collaborator(userId: UUID, course=Depends(check_course)):
         course.teachers.append(teacher)
     else:
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='Collaborator already existed.')
+    session.commit()
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Collaborator added succesfully.')
 
 
