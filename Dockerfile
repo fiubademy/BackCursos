@@ -9,9 +9,10 @@ RUN apt-get -y install python3-pip
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+RUN mkdir app
 WORKDIR /app
 
 COPY . /app/
 
 RUN pip3 install -r requirements.txt
-CMD python3 src/app/main.py
+CMD ./Commands.sh
