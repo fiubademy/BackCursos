@@ -244,6 +244,7 @@ async def add_content(new: ContentCreate, course=Depends(check_course)):
 
 @ router.delete('/{courseId}', summary='Delete course')
 async def delete(course=Depends(check_course)):
+    session.query(CourseCollaborators).filter(CourseCollaborators.course_id == course.id).delete()
     session.delete(course)
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course deleted succesfully.')
