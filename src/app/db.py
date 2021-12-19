@@ -36,19 +36,20 @@ course_hashtags = Table('course_hashtags', Base.metadata,
                             'hashtags.id'), primary_key=True)
                         )
 
-course_teachers = Table('course_teachers', Base.metadata,
-                        Column('course_id', ForeignKey(
-                            'courses.id'), primary_key=True),
-                        Column('teacher_id', ForeignKey(
-                            'teachers.user_id'), primary_key=True)
-                        )
-
 course_favs = Table('course_favs', Base.metadata,
                         Column('course_id', ForeignKey(
                             'courses.id'), primary_key=True),
                         Column('user_id', ForeignKey(
                             'users.user_id'), primary_key=True)
                         )
+
+
+class CourseCollaborators(Base):
+    __tablename__ = "course_collaborators"
+    id = Column(Integer, primary_key=True)
+    course_id = Column(UUID(as_uuid=True))
+    collaborator_id = Column(UUID(as_uuid=True))
+    accepted = Column(Boolean, nullable=False, default=False)
 
 
 class Course(Base):
@@ -76,9 +77,6 @@ class Course(Base):
     hashtags = relationship('Hashtag',
                             secondary=course_hashtags,
                             back_populates='courses')
-    teachers = relationship('Teacher',
-                            secondary=course_teachers,
-                            back_populates='courses')
     faved_by = relationship('User',
                             secondary=course_favs,
                             back_populates='favs')
@@ -101,12 +99,10 @@ class Hashtag(Base):  # many to many relationship
                            back_populates='hashtags')
 
 
-class Teacher(Base):  # many to many relationship
-    __tablename__ = "teachers"
-    user_id = Column(UUID(as_uuid=True), primary_key=True)
-    courses = relationship('Course',
-                           secondary=course_teachers,
-                           back_populates='teachers')
+# class Teacher(Base):  # many to many relationship
+#     __tablename__ = "teachers"
+#     user_id = Column(UUID(as_uuid=True), primary_key=True)
+#     courses = relationship('CourseTeachers', back_populates='teacher')
 
 
 class Content(Base):  # one to many relationship
