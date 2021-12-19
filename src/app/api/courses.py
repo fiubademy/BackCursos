@@ -139,7 +139,7 @@ async def get_content_list(course=Depends(check_course)):
     return [{'id': content.id, 'name': content.name, 'link': content.link} for content in course.content]
 
 
-@ router.get('/{userId}/pending_collaborations')
+@ router.get('/pending_collaborations/{userId}')
 async def get_pending_collaborations(userId: UUID):
     associations = session.query(CourseCollaborators).filter(
         (CourseCollaborators.collaborator_id == userId) & (CourseCollaborators.accepted == False))
