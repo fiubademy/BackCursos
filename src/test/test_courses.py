@@ -188,7 +188,7 @@ def test_add_accept_and_get_collaborators():
     asyncio.run(add_collaborator(courseId, userId1))
     asyncio.run(add_collaborator(courseId, userId2))
     asyncio.run(accept_collaborator(courseId, userId1))
-    asyncio.run(accept_collaborator(courseId, userId2))    
+    asyncio.run(accept_collaborator(courseId, userId2))
 
     collaborators = asyncio.run(get_collaborators(courseId))
 
@@ -196,6 +196,7 @@ def test_add_accept_and_get_collaborators():
     assert userId2 in collaborators
 
     asyncio.run(delete(courseId))
+
 
 def test_get_pending_collaborations():
     ownerId = str(uuid.uuid4())
@@ -209,6 +210,7 @@ def test_get_pending_collaborations():
     assert {'courseId': uuid.UUID(courseId)} in courses
 
     asyncio.run(delete(courseId))
+
 
 def test_add_and_get_hashtags():
     ownerId = str(uuid.uuid4())
