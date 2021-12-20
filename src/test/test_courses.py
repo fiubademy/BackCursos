@@ -34,8 +34,16 @@ async def get_collaborators(courseId):
     return await courses.get_collaborators(courses.check_course(courseId))
 
 
+async def get_pending_collaborations(userId):
+    return await courses.get_pending_collaborations(userId)
+
+
 async def add_collaborator(courseId, userId):
     return await courses.add_collaborator(userId, courses.check_course(courseId))
+
+
+async def accept_collaborator(courseId, userId):
+    return await courses.accept_collaborator(userId, courses.check_course(courseId))
 
 
 async def add_hashtags(courseId, tags):
@@ -158,10 +166,10 @@ def test_add_and_get_students():
     ownerId = str(uuid.uuid4())
     courseId = asyncio.run(
         post(CourseCreate(owner=ownerId, name='test_add_and_get_students')))["courseId"]
-    userId1 = str(uuid.uuid4())
-    userId2 = str(uuid.uuid4())
-    asyncio.run(add_student(courseId, userId1))
-    asyncio.run(add_student(courseId, userId2))
+    userId1 = uuid.uuid4()
+    userId2 = uuid.uuid4()
+    asyncio.run(add_student(courseId, str(userId1)))
+    asyncio.run(add_student(courseId, str(userId2)))
 
     students = asyncio.run(get_students(courseId))
 
@@ -171,19 +179,35 @@ def test_add_and_get_students():
     asyncio.run(delete(courseId))
 
 
-def test_add_and_get_collaborators():
+def test_add_accept_and_get_collaborators():
     ownerId = str(uuid.uuid4())
     courseId = asyncio.run(
-        post(CourseCreate(owner=ownerId, name='test_add_and_get_collaborators')))["courseId"]
-    userId1 = str(uuid.uuid4())
-    userId2 = str(uuid.uuid4())
+        post(CourseCreate(owner=ownerId, name='test_add_accept_and_get_collaborators')))["courseId"]
+    userId1 = uuid.uuid4()
+    userId2 = uuid.uuid4()
     asyncio.run(add_collaborator(courseId, userId1))
     asyncio.run(add_collaborator(courseId, userId2))
+    asyncio.run(accept_collaborator(courseId, userId1))
+    asyncio.run(accept_collaborator(courseId, userId2))
 
     collaborators = asyncio.run(get_collaborators(courseId))
 
     assert userId1 in collaborators
     assert userId2 in collaborators
+
+    asyncio.run(delete(courseId))
+
+
+def test_get_pending_collaborations():
+    ownerId = str(uuid.uuid4())
+    courseId = asyncio.run(
+        post(CourseCreate(owner=ownerId, name='test_get_pending_collaborations')))["courseId"]
+    userId = uuid.uuid4()
+    asyncio.run(add_collaborator(courseId, userId))
+
+    courses = asyncio.run(get_pending_collaborations(userId))
+
+    assert {'courseId': uuid.UUID(courseId)} in courses
 
     asyncio.run(delete(courseId))
 

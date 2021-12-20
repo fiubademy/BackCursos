@@ -6,7 +6,7 @@ from starlette.responses import JSONResponse
 from sqlalchemy.orm import sessionmaker
 
 from api.models import CourseCreate, CourseUpdate, CourseFilter, Hashtags, ReviewCreate, ContentCreate
-from db import Course, Student, Teacher, Hashtag, Content, Review, User
+from db import Course, CourseCollaborators, Student, Hashtag, Content, Review, User
 
 COURSES_PER_PAGE = 5
 REVIEWS_PER_PAGE = 5
@@ -58,8 +58,8 @@ async def get_courses(
         query = query.filter(
             Course.students.any(user_id=filter.student))
     if filter.collaborator is not None:
-        query = query.filter(
-            Course.teachers.any(user_id=filter.collaborator))
+        query = query.join(CourseCollaborators).filter((CourseCollaborators.accepted == True) & (
+            CourseCollaborators.collaborator_id == filter.collaborator))
     if filter.hashtags is not None:
         for tag in filter.hashtags:
             query = query.filter(
@@ -102,7 +102,9 @@ async def get_students(course=Depends(check_course)):
 
 @ router.get('/{courseId}/collaborators')
 async def get_collaborators(course=Depends(check_course)):
-    return [user.user_id for user in course.teachers]
+    associations = session.query(CourseCollaborators).filter(
+        (CourseCollaborators.course_id == course.id) & (CourseCollaborators.accepted == True))
+    return [association.collaborator_id for association in associations]
 
 
 @ router.get('/{courseId}/owner')
@@ -137,9 +139,17 @@ async def get_content_list(course=Depends(check_course)):
     return [{'id': content.id, 'name': content.name, 'link': content.link} for content in course.content]
 
 
+@ router.get('/pending_collaborations/{userId}')
+async def get_pending_collaborations(userId: UUID):
+    associations = session.query(CourseCollaborators).filter(
+        (CourseCollaborators.collaborator_id == userId) & (CourseCollaborators.accepted == False))
+    return [{'courseId': association.course_id} for association in associations]
+
+
 @ router.patch('/{courseId}')
 async def update(request: CourseUpdate, course=Depends(check_course)):
-    attributes = request.dict(exclude_unset=True, exclude_none=True, exclude={'hashtags'})
+    attributes = request.dict(
+        exclude_unset=True, exclude_none=True, exclude={'hashtags'})
     for att, value in attributes.items():
         setattr(course, att, value)
     if request.hashtags is not None:
@@ -184,13 +194,28 @@ async def add_student(userId: UUID, course=Depends(check_course)):
 
 @ router.post('/{courseId}/add_collaborator/{userId}')
 async def add_collaborator(userId: UUID, course=Depends(check_course)):
-    teacher = session.get(Teacher, userId)
-    if teacher is None:
-        course.teachers.append(Teacher(user_id=userId))
-    elif teacher not in course.teachers:
-        course.teachers.append(teacher)
-    else:
-        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='Collaborator already existed.')
+    association = session.query(CourseCollaborators).filter(
+        (CourseCollaborators.course_id == course.id) & (CourseCollaborators.collaborator_id == userId)).first()
+    if association is not None:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='User already invited.')
+    session.add(CourseCollaborators(course_id=course.id,
+                collaborator_id=userId, accepted=False))
+    session.commit()
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content='Collaborator invite sent succesfully.')
+
+
+@ router.post('/{courseId}/accept_collaborator/{userId}')
+async def accept_collaborator(userId: UUID, course=Depends(check_course)):
+    accepted = session.query(CourseCollaborators).filter((CourseCollaborators.course_id == course.id) & (
+        CourseCollaborators.collaborator_id == userId) & (CourseCollaborators.accepted == True)).first()
+    if accepted is not None:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content='Collaborator already accepted.')
+
+    invite = session.query(CourseCollaborators).filter((CourseCollaborators.course_id == course.id) & (
+        CourseCollaborators.collaborator_id == userId) & (CourseCollaborators.accepted == False)).first()
+    if invite is None:
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='Collaborator invite not found.')
+    invite.accepted = True
     session.commit()
     return JSONResponse(status_code=status.HTTP_201_CREATED, content='Collaborator added succesfully.')
 
@@ -225,6 +250,8 @@ async def add_content(new: ContentCreate, course=Depends(check_course)):
 
 @ router.delete('/{courseId}', summary='Delete course')
 async def delete(course=Depends(check_course)):
+    session.query(CourseCollaborators).filter(
+        CourseCollaborators.course_id == course.id).delete()
     session.delete(course)
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Course deleted succesfully.')
@@ -246,14 +273,12 @@ async def remove_student(userId: UUID, course=Depends(check_course)):
 
 @ router.delete('/{courseId}/remove_collaborator/{userId}')
 async def remove_collaborator(userId: UUID, course=Depends(check_course)):
-    removed = False
-    for teacher in course.teachers:
-        if teacher.user_id == userId:
-            course.teachers.remove(teacher)
-            removed = True
-            break
-    if not removed:
+    association = session.query(CourseCollaborators).filter(
+        (CourseCollaborators.collaborator_id == userId) & (CourseCollaborators.course_id == course.id)).first()
+    if association is None:
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content='No collaborator found.')
+    session.query(CourseCollaborators).filter((CourseCollaborators.collaborator_id == userId) & (
+        CourseCollaborators.course_id == course.id)).delete()
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Collaborator was removed succesfully.')
 
