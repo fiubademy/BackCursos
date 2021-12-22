@@ -44,14 +44,6 @@ course_favs = Table('course_favs', Base.metadata,
                         )
 
 
-class CourseCollaborators(Base):
-    __tablename__ = "course_collaborators"
-    id = Column(Integer, primary_key=True)
-    course_id = Column(UUID(as_uuid=True))
-    collaborator_id = Column(UUID(as_uuid=True))
-    accepted = Column(Boolean, nullable=False, default=False)
-
-
 class Course(Base):
     __tablename__ = "courses"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -70,6 +62,8 @@ class Course(Base):
     content = relationship('Content', back_populates="course",
                            cascade="all, delete, delete-orphan")
     reviews = relationship('Review', back_populates="course",
+                           cascade="all, delete, delete-orphan")
+    collaborators = relationship('Collaborator', back_populates='course',
                            cascade="all, delete, delete-orphan")
     students = relationship('Student',
                             secondary=course_students,
@@ -90,6 +84,14 @@ class Student(Base):  # many to many relationship
                            back_populates='students')
 
 
+class Collaborator(Base):
+    __tablename__ = "course_collaborators"
+    course_id = Column(UUID(as_uuid=True), ForeignKey('courses.id'), primary_key=True)
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
+    accepted = Column(Boolean, nullable=False, default=False)
+    course = relationship("Course", back_populates="collaborators")
+
+
 class Hashtag(Base):  # many to many relationship
     __tablename__ = "hashtags"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -97,12 +99,6 @@ class Hashtag(Base):  # many to many relationship
     courses = relationship('Course',
                            secondary=course_hashtags,
                            back_populates='hashtags')
-
-
-# class Teacher(Base):  # many to many relationship
-#     __tablename__ = "teachers"
-#     user_id = Column(UUID(as_uuid=True), primary_key=True)
-#     courses = relationship('CourseTeachers', back_populates='teacher')
 
 
 class Content(Base):  # one to many relationship
