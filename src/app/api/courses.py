@@ -116,17 +116,20 @@ async def get_owner(course=Depends(check_course)):
 async def get_review(userId: UUID, course=Depends(check_course)):
     try:
         review = next(
-            review for review in course.reviews if review.user_id == userId)
+            review for review in course.reviews if (review.user_id == userId))
         return {'rating': review.rating, 'description': review.description}
     except StopIteration:
         return {'rating': None, 'description': None}
 
 
 @ router.get('/{courseId}/all_reviews/{pagenum}')
-async def get_all_reviews(pagenum: int = Path(..., gt=0), course=Depends(check_course)):
-    reviews = course.reviews[REVIEWS_PER_PAGE *
+async def get_all_reviews(pagenum: int = Path(..., gt=0), ratingFilter: Optional[int] = None, course=Depends(check_course)):
+    reviews = course.reviews
+    if ratingFilter is not None:
+        reviews = [review for review in reviews if review.rating == ratingFilter] 
+    reviews = reviews[REVIEWS_PER_PAGE *
                              (pagenum-1):REVIEWS_PER_PAGE*(pagenum)]
-    num_pages = math.ceil(len(course.reviews)/REVIEWS_PER_PAGE)
+    num_pages = math.ceil(len(reviews)/REVIEWS_PER_PAGE)
     return {'num_pages': num_pages, 'content': [{
         'userId': review.user_id,
         'rating': review.rating,
@@ -333,9 +336,8 @@ async def add_review(new: ReviewCreate, course=Depends(check_course)):
     except StopIteration:
         pass
 
-    course.rating = (sum([r.rating for r in course.reviews]
-                         ) + new.rating)/(len(course.reviews) + 1)
     session.merge(new)
+    course.rating = (sum([r.rating for r in course.reviews]))/len(course.reviews)
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Review added succesfully.')
 
