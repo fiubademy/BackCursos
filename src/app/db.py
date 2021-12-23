@@ -56,7 +56,7 @@ class Course(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     sub_level = Column(Integer, nullable=True)
-    rating = Column(Float, nullable=True)
+    rating = Column(Float, nullable=False, default=0)
     category = Column(String)
 
     content = relationship('Content', back_populates="course",

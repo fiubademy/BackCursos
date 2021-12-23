@@ -76,6 +76,7 @@ async def get_courses(
         query = query.filter(Course.blocked == filter.blocked)
 
     num_pages = math.ceil(query.count()/COURSES_PER_PAGE)
+    query.order_by(Course.rating)
     query = query.limit(COURSES_PER_PAGE).offset((page_num-1)*COURSES_PER_PAGE)
     return {'num_pages': num_pages, 'content': [{
         'id': str(course.id),
@@ -335,8 +336,8 @@ async def add_review(new: ReviewCreate, course=Depends(check_course)):
             review for review in course.reviews if review.user_id == new.user_id).id
     except StopIteration:
         pass
-
     session.merge(new)
+    session.commit()
     course.rating = (sum([r.rating for r in course.reviews]))/len(course.reviews)
     session.commit()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content='Review added succesfully.')
